@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.0.2"
+$ver = "1.0.3"
 $Host.UI.RawUI.WindowTitle = "Enshrouder Tool Fix v$ver"
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
@@ -19,9 +19,15 @@ $matches = Select-String -Path $logFile -Pattern $pattern -AllMatches
 if ($matches.Matches.Count -gt 0) {
     $lastMatch = $matches.Matches[-1]
     $gamePath_1 = $lastMatch.Groups[1].Value
-    $gamePath_0 = $gamePath_1.Substring(0, $gamePath_1.Length - 15)
+    if ($gamePath_1[0] -eq '"') {
+        $gamePath_1 = $gamePath_1.Substring(1)
+    }
+    $gamePath_0 = Split-Path -Path $gamePath_1
+    if ($gamePath_0[0] -eq '"') {
+        $gamePath_0 = $gamePath_0.Substring(1)
+    }
     if (Test-Path $gamePath_1) {
-        Write-Host "Installed game found at: $gamePath_0"
+        Write-Host "Found installed game in: $gamePath_0"
         Write-Host ""
     } else {
         Write-Host "Path to the installed game does not exist: $gamePath_0"
@@ -255,18 +261,33 @@ if ($gameDvrEnabled -eq 0 -and $gameDvrPolicy -eq 0) {
     Write-Host "Completed" -ForegroundColor Green
 }
 Write-Host ""
+$Ram = [Math]::Round((Get-CimInstance -ClassName Win32_ComputerSystem).TotalPhysicalMemory / 1GB)
+if ($Ram -lt 16) {
+    Write-Host "RAM: " -NoNewline
+    Write-Host "$Ram GB" -ForegroundColor Red
+    Write-Host "Attention: the amount of RAM is less than 16 GB, in order for the game to start you need to enter the steam key in the game parameters: " -NoNewline -ForegroundColor Yellow
+    Write-Host "--disable-ram-check" -ForegroundColor Green
+    Write-Host "Even if the game starts with this parameter, it will most likely crash sooner or later." -ForegroundColor Red
+} else {
+    Write-Host "RAM: " -NoNewline
+    Write-Host "$Ram GB" -ForegroundColor Green
+}
+Write-Host ""
 $VideoCard = Get-CimInstance -ClassName Win32_VideoController | Where-Object { $_.AdapterCompatibility }
 $vRam0 = (Get-ItemProperty -Path "HKLM:\HARDWARE\DEVICEMAP\VIDEO" -ErrorAction SilentlyContinue).'\Device\Video0' -replace '\\Registry\\Machine\\', 'HKLM:\\'
 $vRam1 = [Math]::Round((Get-ItemProperty -Path "$vRam0" -ErrorAction SilentlyContinue).'HardwareInformation.qwMemorySize' / 1024 / 1024 / 1024)
 if ($vRam1 -lt 6) {
-    Write-Host "Video card: " -NoNewline
+    Write-Host "Video Card: " -NoNewline
     Write-Host $($VideoCard.Name) -NoNewline
     Write-Host " ($vRam1 GB)" -ForegroundColor Red
-    Write-Host "Warning: Video memory size is less than 6 GB, you won't be able to play the game =(" -ForegroundColor Red
+    Write-Host "Attention: the amount of video memory is less than 6 GB; in order for the game to start, you must enter the steam key in the game parameters: " -NoNewline -ForegroundColor Yellow
+    Write-Host "--disable-vram-check" -ForegroundColor Green
+    Write-Host "Even if the game starts with this parameter, it will most likely crash sooner or later." -ForegroundColor Red
 } else {
-    Write-Host "Video card: " -NoNewline
+    Write-Host "Video Card: " -NoNewline
     Write-Host "$($VideoCard.Name) ($vRam1 GB)" -ForegroundColor Green
 }
+Write-Host ""
 Write-Host "The texture quality setting affects the amount of video memory consumed by the game:" -ForegroundColor Yellow
 Write-Host "Low (~5 GB), Medium (~5.5 GB), High (~6.5 GB), Ultra (~8.5 GB)" -ForegroundColor Yellow
 Write-Host ""
