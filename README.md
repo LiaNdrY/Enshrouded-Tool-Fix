@@ -14,3 +14,8 @@ You can open PowerShell as an administrator and paste the command into console:
 ```powershell
 irm "https://raw.githubusercontent.com/LiaNdrY/Enshrouded-Tool-Fix/main/Enshrouded_Tool_Fix.ps1" | iex
 ```
+
+
+## Screenshot
+
+![App Screenshot](/Images/Screen_01.jpg)
