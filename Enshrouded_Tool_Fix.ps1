@@ -249,6 +249,14 @@ if (Test-Path -Path $fileJson) {
     Write-Host "The enshrouded_local.json file is missing from the game folder." -ForegroundColor Red
     Write-Host ""
 }
+
+$disableGameDVR = Read-Host "GameDVR is enabled. Do you want to disable GameDVR? (Yes/No)"
+if ($disableGameDVR -eq "Yes") {
+    Write-Host "Disabling GameDVR..."
+    # Disabling logic will be here
+} else {
+    Write-Host "Skipping GameDVR disabling."
+}
 $gameDvrEnabled = (Get-ItemProperty -Path "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -ErrorAction SilentlyContinue).GameDVR_Enabled
 $gameDvrPolicy = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR" -Name "value" -ErrorAction SilentlyContinue).value
 if ($gameDvrEnabled -eq 0 -and $gameDvrPolicy -eq 0) {
