@@ -346,4 +346,4 @@ if ($($VideoCard.Name) -like "*nvidia*") {
 Write-Host ""
 Write-Host "A restart of the computer is required." -ForegroundColor Yellow
 Write-Host ""
-Read-Host -Prompt "Press Enter to Exit"
+Read-Host -Prompt "Press Enter to Exit "
