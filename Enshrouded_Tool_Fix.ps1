@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.0.4"
+$ver = "1.0.5"
 $Host.UI.RawUI.WindowTitle = "Enshrouder Tool Fix v$ver"
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
@@ -28,7 +28,7 @@ try {
     Read-Host -Prompt "Press Enter to Exit"
     exit
 }
-$pattern = 'Game process added : AppID ' + $game_id + ' "(.*?\.exe)"'
+$pattern = 'Game process added : AppID ' + $game_id + ' "(.*?\.exe)'
 $matches = Select-String -Path $logFile -Pattern $pattern -AllMatches
 if ($matches.Matches.Count -gt 0) {
     $lastMatch = $matches.Matches[-1]
