@@ -141,7 +141,7 @@ Write-Host "Checking Vulkan layer API versions..."
 foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Path]::GetFileName($_.Key) }) {
     if ([version]$entry.Value.Api_Version -lt [version]"1.2") {
         Write-Host "$($entry.Value.Description) $($entry.Value.Architecture)" -NoNewline -ForegroundColor Red
-        Write-Host " (v$($entry.Value.Api_Version)) – this version is outdated and will be removed" -ForegroundColor Red
+        Write-Host " (v$($entry.Value.Api_Version)) - this version is outdated and will be removed" -ForegroundColor Red
         if ($entry.Key -notlike "*json*") {
             Remove-ItemProperty -Path $entry.Value.Path -Name $entry.Key -ErrorAction SilentlyContinue
         }
@@ -327,7 +327,7 @@ if ($vRam1 -lt 6) {
 }
 Write-Host ""
 Write-Host "The texture quality setting affects the amount of video memory consumed by the game:" -ForegroundColor Yellow
-Write-Host "Low (~5 รม), Medium (~5.5 รม), High (~6.5 รม), Ultra (~8.5 รม)" -ForegroundColor Yellow
+Write-Host "Low (~5 GB), Medium (~5.5 GB), High (~6.5 GB), Ultra (~8.5 GB)" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "It's recommended to update your video card drivers if you have an older version and a newer one is available." -ForegroundColor Yellow
 Write-Host "After that, you must run this utility again to check the Vulkan API version." -ForegroundColor Yellow
