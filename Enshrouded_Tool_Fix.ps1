@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.0.3"
+$ver = "1.0.4"
 $Host.UI.RawUI.WindowTitle = "Enshrouder Tool Fix v$ver"
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
@@ -12,9 +12,23 @@ if (-not $isAdmin) {
 $game_id = 1203620
 Write-Host "Script is running as an administrator. Proceeding with the work..." -ForegroundColor Green
 Write-Host ""
-$steamPath = (Get-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Valve\Steam" -Name "InstallPath").InstallPath
-$logFile = "$steamPath\logs\console_log.txt"
-$pattern = 'Game process added : AppID 1203620 "(.*?\.exe)"'
+try {
+    $steamPath = (Get-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Valve\Steam" -Name "InstallPath").InstallPath
+} catch {
+    Write-Host "Steam is not installed. Further operation of the script is impossible." -ForegroundColor Red
+    Write-Host ""
+    Read-Host -Prompt "Press Enter to Exit"
+    exit
+}
+try {
+    $logFile = "$steamPath\logs\console_log.txt"
+} catch {
+    Write-Host "Cannot find file $logFile. Reinstall Steam. Further operation of the script is impossible." -ForegroundColor Red
+    Write-Host ""
+    Read-Host -Prompt "Press Enter to Exit"
+    exit
+}
+$pattern = 'Game process added : AppID ' + $game_id + ' "(.*?\.exe)"'
 $matches = Select-String -Path $logFile -Pattern $pattern -AllMatches
 if ($matches.Matches.Count -gt 0) {
     $lastMatch = $matches.Matches[-1]
@@ -32,13 +46,13 @@ if ($matches.Matches.Count -gt 0) {
     } else {
         Write-Host "Path to the installed game does not exist: $gamePath_0"
         Write-Host ""
-        Read-Host -Prompt "Press Enter to exit"
+        Read-Host -Prompt "Press Enter to Exit"
         exit
     }
 } else {
     Write-Host "No installed game found"
     Write-Host ""
-    Read-Host -Prompt "Press Enter to exit"
+    Read-Host -Prompt "Press Enter to Exit"
     exit
 }
 $Api_Video0 = (Get-ItemProperty -Path "HKLM:\HARDWARE\DEVICEMAP\VIDEO" -ErrorAction SilentlyContinue).'\Device\Video0' -replace '\\Registry\\Machine\\', 'HKLM:\\'
@@ -127,7 +141,7 @@ Write-Host "Checking Vulkan layer API versions..."
 foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Path]::GetFileName($_.Key) }) {
     if ([version]$entry.Value.Api_Version -lt [version]"1.2") {
         Write-Host "$($entry.Value.Description) $($entry.Value.Architecture)" -NoNewline -ForegroundColor Red
-        Write-Host " (v$($entry.Value.Api_Version)) - this version is outdated and will be removed" -ForegroundColor Red
+        Write-Host " (v$($entry.Value.Api_Version)) – this version is outdated and will be removed" -ForegroundColor Red
         if ($entry.Key -notlike "*json*") {
             Remove-ItemProperty -Path $entry.Value.Path -Name $entry.Key -ErrorAction SilentlyContinue
         }
@@ -203,11 +217,12 @@ if (Test-Path "$env:LOCALAPPDATA\NVIDIA") {
             }
         }
     }
-    Write-Host "Completed" -ForegroundColor Green
+    Write-Host "Done" -ForegroundColor Green
 }
 $paths_AMD = @(
     "$env:LOCALAPPDATA\AMD\GLCache",
     "$env:LOCALAPPDATA\AMD\DxCache",
+    "$env:LOCALAPPDATA\AMD\DxcCache",
     "$env:LOCALAPPDATA\AMD\Dx9Cache",
     "$env:LOCALAPPDATA\AMD\VkCache"
 )
@@ -222,43 +237,66 @@ if (Test-Path "$env:LOCALAPPDATA\AMD") {
             }
         }
     }
-    Write-Host "Completed" -ForegroundColor Green
+    Write-Host "Done" -ForegroundColor Green
 }
 Write-Host "Clearing game shader cache in $FolderCache\: " -NoNewline
 Remove-Item -Path $FolderCache -Recurse -Force -ErrorAction SilentlyContinue
-Write-Host "Completed" -ForegroundColor Green
+Write-Host "Done" -ForegroundColor Green
 Write-Host ""
 Write-Host "After starting the game, it will start recompiling shaders after entering your world, shader compilation will continue (this will take some time ~10 min), you can observe the progress at the bottom of the menu by pressing ESC" -ForegroundColor Yellow
 Write-Host ""
 $fileJson = "$gamePath_0\enshrouded_local.json"
 if (Test-Path -Path $fileJson) {
     Write-Host "Setting the optimal resolution for the game: " -NoNewline
-    $monitor = Get-CimInstance -ClassName Win32_VideoController
+    Add-Type -AssemblyName System.Windows.Forms
+    $screens = [System.Windows.Forms.Screen]::AllScreens
+    foreach ($screen in $screens) {
+        if ($screen.Primary) {
+            $primaryMonitorWidth = $screen.Bounds.Width
+            $primaryMonitorHeight = $screen.Bounds.Height
+            break
+        }
+    }
     $json = Get-Content -Path $fileJson | ConvertFrom-Json
     $json.graphics.windowPosition.x = 0
     $json.graphics.windowPosition.y = 0
-    $json.graphics.windowSize.x = $monitor.CurrentHorizontalResolution
-    $json.graphics.windowSize.y = $monitor.CurrentVerticalResolution
+    $json.graphics.windowSize.x = $($primaryMonitorWidth)
+    $json.graphics.windowSize.y = $($primaryMonitorHeight)
     $json.graphics.forceBackbufferResolution.x = 0
     $json.graphics.forceBackbufferResolution.y = 0
     $json | ConvertTo-Json | Set-Content -Path $fileJson
-    Write-Host "Completed" -ForegroundColor Green
+    Write-Host "Done ($($primaryMonitorWidth)x$($primaryMonitorHeight))" -ForegroundColor Green
     Write-Host ""
 } else {
-    Write-Host "Setting the optimal resolution for the game: " -NoNewline
+    Write-Host "Set the native resolution for the game: " -NoNewline
     Write-Host "The enshrouded_local.json file is missing from the game folder." -ForegroundColor Red
     Write-Host ""
 }
 $gameDvrEnabled = (Get-ItemProperty -Path "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -ErrorAction SilentlyContinue).GameDVR_Enabled
 $gameDvrPolicy = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR" -Name "value" -ErrorAction SilentlyContinue).value
+Write-Host "GameDVR indirectly affects performance in games; it is advisable to disable it if you have a weak video card." -ForegroundColor Yellow
 if ($gameDvrEnabled -eq 0 -and $gameDvrPolicy -eq 0) {
-    Write-Host "Disabling GameDVR: " -NoNewline
-    Write-Host "GameDVR is already disabled" -ForegroundColor Green
+    Write-Host "GameDVR Status: " -NoNewline
+    Write-Host "Off" -ForegroundColor Green
+    $answer = Read-Host "Want to enable GameDVR? (Y - Yes / Any - No)"
+    if ($answer -eq "Y") {
+        Write-Host "GameDVR Status: " -NoNewline
+        Set-ItemProperty -Path "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -Value 1 -Type DWORD
+        Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR" -Name "value" -Value 1 -Type DWORD
+        Write-Host "On" -ForegroundColor Green
+    } else {
+    }
 } else {
-    Write-Host "Disabling GameDVR: " -NoNewline
-    Set-ItemProperty -Path "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -Value 0 -Type DWORD
-    Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR" -Name "value" -Value 0 -Type DWORD
-    Write-Host "Completed" -ForegroundColor Green
+    Write-Host "GameDVR Status: " -NoNewline
+    Write-Host "On" -ForegroundColor Green
+    $answer = Read-Host "Want to disable GameDVR? (Y - Yes / Any - No)"
+    if ($answer -eq "Y") {
+        Write-Host "GameDVR Status: " -NoNewline
+        Set-ItemProperty -Path "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -Value 0 -Type DWORD
+        Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR" -Name "value" -Value 0 -Type DWORD
+        Write-Host "Off" -ForegroundColor Green
+    } else {
+    }
 }
 Write-Host ""
 $Ram = [Math]::Round((Get-CimInstance -ClassName Win32_ComputerSystem).TotalPhysicalMemory / 1GB)
@@ -289,7 +327,7 @@ if ($vRam1 -lt 6) {
 }
 Write-Host ""
 Write-Host "The texture quality setting affects the amount of video memory consumed by the game:" -ForegroundColor Yellow
-Write-Host "Low (~5 GB), Medium (~5.5 GB), High (~6.5 GB), Ultra (~8.5 GB)" -ForegroundColor Yellow
+Write-Host "Low (~5 รม), Medium (~5.5 รม), High (~6.5 รม), Ultra (~8.5 รม)" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "It's recommended to update your video card drivers if you have an older version and a newer one is available." -ForegroundColor Yellow
 Write-Host "After that, you must run this utility again to check the Vulkan API version." -ForegroundColor Yellow
@@ -308,4 +346,4 @@ if ($($VideoCard.Name) -like "*nvidia*") {
 Write-Host ""
 Write-Host "A restart of the computer is required." -ForegroundColor Yellow
 Write-Host ""
-Read-Host -Prompt "Press Enter to exit"
+Read-Host -Prompt "Press Enter to Exit"
