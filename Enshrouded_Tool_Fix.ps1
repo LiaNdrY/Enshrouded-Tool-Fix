@@ -1,6 +1,7 @@
 # Creator LiaNdrY
-$ver = "1.0.5"
+$ver = "1.0.6"
 $Host.UI.RawUI.WindowTitle = "Enshrouder Tool Fix v$ver"
+# Checking whether the script is running with administrator rights
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     Write-Host "This script must be run as an administrator." -ForegroundColor Yellow
@@ -9,9 +10,10 @@ if (-not $isAdmin) {
     [Console]::ReadLine() | Out-Null
     exit
 }
-$game_id = 1203620
 Write-Host "Script is running as an administrator. Proceeding with the work..." -ForegroundColor Green
 Write-Host ""
+# Finding the path to the installed game folder on Steam
+$game_id = 1203620
 try {
     $steamPath = (Get-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Valve\Steam" -Name "InstallPath").InstallPath
 } catch {
@@ -55,6 +57,7 @@ if ($matches.Matches.Count -gt 0) {
     Read-Host -Prompt "Press Enter to Exit"
     exit
 }
+# Checking Vulkan API layer versions for old versions
 $Api_Video0 = (Get-ItemProperty -Path "HKLM:\HARDWARE\DEVICEMAP\VIDEO" -ErrorAction SilentlyContinue).'\Device\Video0' -replace '\\Registry\\Machine\\', 'HKLM:\\'
 $Api_Video_x64 = (Get-ItemProperty -Path "$Api_Video0" -ErrorAction SilentlyContinue).PSObject.Properties | Where-Object { $_.Name -match 'Vulkan' -and $_.Name -match 'Driver' -and $_.Name -notmatch 'Wow' }
 $Api_Video_x86 = (Get-ItemProperty -Path "$Api_Video0" -ErrorAction SilentlyContinue).PSObject.Properties | Where-Object { $_.Name -match 'Vulkan' -and $_.Name -match 'Driver' -and $_.Name -match 'Wow' }
@@ -150,6 +153,7 @@ foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Pa
         Write-Host " (v$($entry.Value.Api_Version))" -ForegroundColor Green
     }
 }
+# Checking Vulkan API Versions
 Write-Host ""
 $FolderCache = $gamePath_0.Substring(0, $gamePath_0.Length - 18) + "\shadercache\$game_id"
 Write-Host "Checking Vulkan Runtime versions..."
@@ -180,6 +184,7 @@ if ([version]$CurDllVer -lt [version]$LastVRVer) {
     Write-Host "Installed Vulkan Runtime version: " + $CurDllVer -ForegroundColor Green
     Write-Host ""
 }
+# Finding processes using the Vulkan API
 Write-Host "Looking for running processes using Vulkan..."
 $processes = Get-Process
 $vulkanProcesses = @()
@@ -198,6 +203,7 @@ if ($vulkanProcesses.Count -eq 0) {
 } else {
     $vulkanProcesses | Select-Object ProcessName, Id, Path | Out-Host
 }
+# Clearing the cache of nVidia video cards
 $paths_nVidia = @(
     "$env:LOCALAPPDATA\NVIDIA\GLCache",
     "$env:LOCALAPPDATA\NVIDIA\DXCache",
@@ -219,6 +225,7 @@ if (Test-Path "$env:LOCALAPPDATA\NVIDIA") {
     }
     Write-Host "Done" -ForegroundColor Green
 }
+# Clearing the cache of AMD video cards
 $paths_AMD = @(
     "$env:LOCALAPPDATA\AMD\GLCache",
     "$env:LOCALAPPDATA\AMD\DxCache",
@@ -239,6 +246,7 @@ if (Test-Path "$env:LOCALAPPDATA\AMD") {
     }
     Write-Host "Done" -ForegroundColor Green
 }
+# Clearing the cache in the Steam directory
 Write-Host "Clearing game shader cache in $FolderCache\: " -NoNewline
 Remove-Item -Path $FolderCache -Recurse -Force -ErrorAction SilentlyContinue
 Write-Host "Done" -ForegroundColor Green
@@ -247,7 +255,7 @@ Write-Host "After starting the game, it will start recompiling shaders after ent
 Write-Host ""
 $fileJson = "$gamePath_0\enshrouded_local.json"
 if (Test-Path -Path $fileJson) {
-    Write-Host "Setting the optimal resolution for the game: " -NoNewline
+    Write-Host "Set the native resolution for the game: " -NoNewline
     Add-Type -AssemblyName System.Windows.Forms
     $screens = [System.Windows.Forms.Screen]::AllScreens
     foreach ($screen in $screens) {
@@ -272,6 +280,22 @@ if (Test-Path -Path $fileJson) {
     Write-Host "The enshrouded_local.json file is missing from the game folder." -ForegroundColor Red
     Write-Host ""
 }
+# Setting the minimum FOV
+$fileJsonSG = "$env:USERPROFILE\Saved Games\Enshrouded\enshrouded_user.json"
+if (Test-Path -Path $fileJsonSG) {
+    Write-Host "Set the minimum FOV in the game: " -NoNewline
+    $json = Get-Content -Path $fileJsonSG | ConvertFrom-Json
+    $json.graphics.fov = 42480000
+    $json | ConvertTo-Json | Set-Content -Path $fileJsonSG
+    Write-Host "Done" -ForegroundColor Green
+    Write-Host "In the future, you can increase the FOV in the game settings if it stops crashing." -ForegroundColor Yellow
+    Write-Host ""
+} else {
+    Write-Host "Set the minimum FOV in the game: " -NoNewline
+    Write-Host "The enshrouded_local.json file is missing from the Saved Games folder." -ForegroundColor Red
+    Write-Host ""
+}
+# Enable/disable GameDVR
 $gameDvrEnabled = (Get-ItemProperty -Path "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -ErrorAction SilentlyContinue).GameDVR_Enabled
 $gameDvrPolicy = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR" -Name "value" -ErrorAction SilentlyContinue).value
 Write-Host "GameDVR indirectly affects performance in games; it is advisable to disable it if you have a weak video card." -ForegroundColor Yellow
@@ -298,6 +322,7 @@ if ($gameDvrEnabled -eq 0 -and $gameDvrPolicy -eq 0) {
     } else {
     }
 }
+# Check RAM
 Write-Host ""
 $Ram = [Math]::Round((Get-CimInstance -ClassName Win32_ComputerSystem).TotalPhysicalMemory / 1GB)
 if ($Ram -lt 16) {
@@ -310,6 +335,7 @@ if ($Ram -lt 16) {
     Write-Host "RAM: " -NoNewline
     Write-Host "$Ram GB" -ForegroundColor Green
 }
+# Check VRAM
 Write-Host ""
 $VideoCard = Get-CimInstance -ClassName Win32_VideoController | Where-Object { $_.AdapterCompatibility }
 $vRam0 = (Get-ItemProperty -Path "HKLM:\HARDWARE\DEVICEMAP\VIDEO" -ErrorAction SilentlyContinue).'\Device\Video0' -replace '\\Registry\\Machine\\', 'HKLM:\\'
@@ -343,7 +369,8 @@ if ($($VideoCard.Name) -like "*nvidia*") {
 } else {
     Write-Host "Video card not recognized."
 }
+# Completing script execution
 Write-Host ""
 Write-Host "A restart of the computer is required." -ForegroundColor Yellow
 Write-Host ""
-Read-Host -Prompt "Press Enter to Exit "
+Read-Host -Prompt "Press Enter to Exit"
