@@ -285,7 +285,7 @@ $fileJsonSG = "$env:USERPROFILE\Saved Games\Enshrouded\enshrouded_user.json"
 if (Test-Path -Path $fileJsonSG) {
     Write-Host "Set the minimum FOV in the game: " -NoNewline
     $json = Get-Content -Path $fileJsonSG | ConvertFrom-Json
-    $json.graphics.fov = 42480000
+    $json.graphics.fov = "42480000"
     $json | ConvertTo-Json | Set-Content -Path $fileJsonSG
     Write-Host "Done" -ForegroundColor Green
     Write-Host "In the future, you can increase the FOV in the game settings if it stops crashing." -ForegroundColor Yellow
