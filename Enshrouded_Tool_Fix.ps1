@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.0.6"
+$ver = "1.0.7"
 $Host.UI.RawUI.WindowTitle = "Enshrouder Tool Fix v$ver"
 # Checking whether the script is running with administrator rights
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -14,6 +14,19 @@ Write-Host "Script is running as an administrator. Proceeding with the work..." 
 Write-Host ""
 # Finding the path to the installed game folder on Steam
 $game_id = 1203620
+function Format-Json([parameter(mandatory, valuefrompipeline)][string] $json) {
+    $indent = 0;
+    ($json -split "`n" | % {
+        if ($_ -match '[\}\]]\s*,?\s*$') {
+            $indent--
+        }
+        $line = ('  ' * $indent) + $($_.trimstart() -replace '":  (["{[])', '": $1' -replace ':  ', ': ')
+        if ($_ -match '[\{\[]\s*$') {
+            $indent++
+        }
+        $line
+    }) -join "`n"
+}
 try {
     $steamPath = (Get-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Valve\Steam" -Name "InstallPath").InstallPath
 } catch {
@@ -272,7 +285,11 @@ if (Test-Path -Path $fileJson) {
     $json.graphics.windowSize.y = $($primaryMonitorHeight)
     $json.graphics.forceBackbufferResolution.x = 0
     $json.graphics.forceBackbufferResolution.y = 0
-    $json | ConvertTo-Json | Set-Content -Path $fileJson
+    $json.graphics.sleepInBackground = $false
+    $json | ConvertTo-Json -Depth 100 | Format-Json |
+        ForEach-Object {$_ -replace "(?m)  (?<=^(?:  )*)", "`t" } |
+        ForEach-Object {$_ -replace "`t`t`t`t`t`t`t`t`n`t`t`t`t`t`t`t", "`t`t`t`t`t`t`t" } |
+        Set-Content -Path $fileJson
     Write-Host "Done ($($primaryMonitorWidth)x$($primaryMonitorHeight))" -ForegroundColor Green
     Write-Host ""
 } else {
@@ -284,17 +301,62 @@ if (Test-Path -Path $fileJson) {
 $fileJsonSG = "$env:USERPROFILE\Saved Games\Enshrouded\enshrouded_user.json"
 if (Test-Path -Path $fileJsonSG) {
     Write-Host "Set the minimum FOV in the game: " -NoNewline
-    $json = Get-Content -Path $fileJsonSG | ConvertFrom-Json
-    $json.graphics.fov = "42480000"
-    $json | ConvertTo-Json | Set-Content -Path $fileJsonSG
+    $json = Get-Content -Path $fileJsonSG -Raw | ConvertFrom-Json
+    if ($json.graphics -and $json.graphics.PSObject.Properties.Name -contains 'fov') {
+        $json.graphics.fov = "42480000"
+    } else {
+        Write-Host "The 'fov' property does not exist in the enshrouded_user.json file." -ForegroundColor Yellow
+        if (!$json.graphics) {
+            $json | Add-Member -NotePropertyName 'graphics' -NotePropertyValue ([PSCustomObject]@{})
+        }
+        $json.graphics | Add-Member -NotePropertyName 'fov' -NotePropertyValue "42480000"
+    }
+    $json | ConvertTo-Json -Depth 100 | Format-Json |
+        ForEach-Object {$_ -replace "(?m)  (?<=^(?:  )*)", "`t" } |
+        ForEach-Object {$_ -replace "`t`t`t`t`t`t`t`t`n`t`t`t`t`t`t`t", "`t`t`t`t`t`t`t" } |
+        Set-Content -Path $fileJsonSG
     Write-Host "Done" -ForegroundColor Green
     Write-Host "In the future, you can increase the FOV in the game settings if it stops crashing." -ForegroundColor Yellow
     Write-Host ""
 } else {
     Write-Host "Set the minimum FOV in the game: " -NoNewline
-    Write-Host "The enshrouded_local.json file is missing from the Saved Games folder." -ForegroundColor Red
+    Write-Host "The enshrouded_user.json file is missing from the Saved Games folder." -ForegroundColor Red
     Write-Host ""
 }
+# Set Powerplan
+$guids = @{
+    "High performance" = "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
+    "Balanced"         = "381b4222-f694-41f0-9685-ff5bb260df2e"
+    "Power saver"      = "a1841308-3541-4fab-bc81-f71556f20b4a"
+}
+$powerSchemes = powercfg -l
+$activeGUID = ($powerSchemes | Select-String -Pattern '(?<=\().+?(?=\))' -AllMatches).Matches.Value
+if ($activeGUID -eq $guids["Balanced"] -or $activeGUID -eq $guids["Power saver"]) {
+    powercfg /S $guids["High performance"]
+    Write-Host "Changing the power saving scheme to 'High Performance': " -NoNewline
+    Write-Host "Done" -ForegroundColor Green
+} else {
+    $powerScheme = Get-CimInstance -Namespace root\cimv2\power -ClassName Win32_PowerPlan -Filter "IsActive='true'"
+    Write-Host "Changing the power saving scheme to 'High Performance': " -NoNewline
+    Write-Host "The scheme has not been changed since it is already installed - " -ForegroundColor Yellow -NoNewline
+    Write-Host $powerScheme.ElementName -ForegroundColor Yellow
+}
+# Increase system responsiveness and network throughput
+Write-Host ""
+$perfomanceSystem = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"
+$values = @{
+    "NetworkThrottlingIndex" = 20
+    "SystemResponsiveness" = 10
+}
+if (!(Test-Path $perfomanceSystem)) {
+    New-Item -Path $perfomanceSystem -Force | Out-Null
+}
+foreach ($key in $values.Keys) {
+    Set-ItemProperty -Path $perfomanceSystem -Name $key -Value $values[$key] -Type "DWord"
+}
+Write-Host "Improve input responsiveness and network throughput: " -NoNewline
+Write-Host "Done" -ForegroundColor Green
+Write-Host ""
 # Enable/disable GameDVR
 $gameDvrEnabled = (Get-ItemProperty -Path "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -ErrorAction SilentlyContinue).GameDVR_Enabled
 $gameDvrPolicy = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR" -Name "value" -ErrorAction SilentlyContinue).value
@@ -305,7 +367,6 @@ if ($gameDvrEnabled -eq 0 -and $gameDvrPolicy -eq 0) {
     $answer = Read-Host "Want to enable GameDVR? (Y - Yes / Any - No)"
     if ($answer -eq "Y") {
         Write-Host "GameDVR Status: " -NoNewline
-        Set-ItemProperty -Path "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -Value 1 -Type DWORD
         Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR" -Name "value" -Value 1 -Type DWORD
         Write-Host "On" -ForegroundColor Green
     } else {
@@ -366,11 +427,13 @@ if ($($VideoCard.Name) -like "*nvidia*") {
 } elseif ($($VideoCard.Name) -like "*amd*") {
     Write-Host "Link to the latest video driver: " -NoNewline
     Write-Host "(https://www.amd.com/en/support/kb/release-notes/rn-rad-win-23-40-02-03-enshrouded)" -ForegroundColor Green
+    Write-Host "You can also try a driver with enhanced support for Vulcan features: " -NoNewline
+    Write-Host "(https://drivers.amd.com/drivers/amd-software-adrenalin-edition-23.20.13.02-win10-win11-jan19-rdna_vk.exe)" -ForegroundColor Green
 } else {
     Write-Host "Video card not recognized."
 }
 # Completing script execution
 Write-Host ""
-Write-Host "A restart of the computer is required." -ForegroundColor Yellow
+Write-Host "The computer must be restarted for the changes to take effect." -ForegroundColor Yellow
 Write-Host ""
 Read-Host -Prompt "Press Enter to Exit"
