@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.0.8"
+$ver = "1.0.9"
 $Host.UI.RawUI.WindowTitle = "Enshrouder Tool Fix v$ver"
 # Checking whether the script is running with administrator rights
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -115,7 +115,7 @@ $keyPaths[$Api_Video_x64.Name] = @{
     Api_Version = ""
 }
 $uniqueKeyPaths = @{}
-$keyPaths.GetEnumerator() | Group-Object -Property { [System.IO.Path]::GetFileName($_.Name) } | Sort-Object -Property { [System.IO.Path]::GetFileName($_.Group[0].Name) } | ForEach-Object {
+$keyPaths.GetEnumerator() | Group-Object -Property { [System.IO.Path]::GetFileName($_.Name) } | Sort-Object -Property { [System.IO.Path]::GetFileName($_.Group[0].Name) } |ForEach-Object {
     $uniqueKeyPaths[$_.Group[0].Name] = $_.Group[0].Value
 }
 foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Path]::GetFileName($_.Key) }) {
@@ -156,15 +156,17 @@ foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Pa
 }
 Write-Host "Checking Vulkan layer API versions..."
 foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Path]::GetFileName($_.Key) }) {
-    if ([version]$entry.Value.Api_Version -lt [version]"1.2") {
-        Write-Host "$($entry.Value.Description) $($entry.Value.Architecture)" -NoNewline -ForegroundColor Red
-        Write-Host " (v$($entry.Value.Api_Version)) - this version is outdated and will be removed" -ForegroundColor Red
-        if ($entry.Key -notlike "*json*") {
-            Remove-ItemProperty -Path $entry.Value.Path -Name $entry.Key -ErrorAction SilentlyContinue
-        }
+    $apiVersion = if ([string]::IsNullOrWhiteSpace($entry.Value.Api_Version)) { "0.0.000" } else { $entry.Value.Api_Version }
+    $description = if ([string]::IsNullOrWhiteSpace($entry.Value.Description)) { "Layer name is empty" } else { $entry.Value.Description }
+    if ([version]$apiVersion -lt [version]"1.2") {
+        Write-Host "$description $($entry.Value.Architecture)" -NoNewline -ForegroundColor Red
+        Write-Host " (v$apiVersion) - this version is outdated and will be removed" -ForegroundColor Red
+        #if ($entry.Key -notlike "*json*") {
+        Remove-ItemProperty -Path $entry.Value.Path -Name $entry.Key -ErrorAction SilentlyContinue
+        #}
     } else {
-        Write-Host "$($entry.Value.Description) $($entry.Value.Architecture)" -NoNewline
-        Write-Host " (v$($entry.Value.Api_Version))" -ForegroundColor Green
+        Write-Host "$description $($entry.Value.Architecture)" -NoNewline
+        Write-Host " (v$apiVersion)" -ForegroundColor Green
     }
 }
 # Checking Vulkan API Versions
@@ -266,6 +268,7 @@ Remove-Item -Path $FolderCache -Recurse -Force -ErrorAction SilentlyContinue
 Write-Host "Done" -ForegroundColor Green
 Write-Host ""
 Write-Host "After starting the game, it will start recompiling shaders after entering your world, shader compilation will continue (this will take some time ~10 min), you can observe the progress at the bottom of the menu by pressing ESC" -ForegroundColor Yellow
+# Setting the native resolution in the game
 Write-Host ""
 $fileJson = "$gamePath_0\enshrouded_local.json"
 if (Test-Path -Path $fileJson) {
@@ -289,7 +292,6 @@ if (Test-Path -Path $fileJson) {
     $json.graphics.sleepInBackground = $false
     $json | ConvertTo-Json -Depth 100 | Format-Json |
         ForEach-Object {$_ -replace "(?m)  (?<=^(?:  )*)", "`t" } |
-        ForEach-Object {$_ -replace "`t`t`t`t`t`t`t`t`n`t`t`t`t`t`t`t", "`t`t`t`t`t`t`t" } |
         Set-Content -Path $fileJson
     Write-Host "Done ($($primaryMonitorWidth)x$($primaryMonitorHeight))" -ForegroundColor Green
     Write-Host ""
@@ -314,7 +316,6 @@ if (Test-Path -Path $fileJsonSG) {
     }
     $json | ConvertTo-Json -Depth 100 | Format-Json |
         ForEach-Object {$_ -replace "(?m)  (?<=^(?:  )*)", "`t" } |
-        ForEach-Object {$_ -replace "`t`t`t`t`t`t`t`t`n`t`t`t`t`t`t`t", "`t`t`t`t`t`t`t" } |
         Set-Content -Path $fileJsonSG
     Write-Host "Done" -ForegroundColor Green
     Write-Host "In the future, you can increase the FOV in the game settings if it stops crashing." -ForegroundColor Yellow
@@ -427,13 +428,15 @@ if ($($VideoCard.Name) -like "*nvidia*") {
     Write-Host "(https://developer.nvidia.com/downloads/vulkan-beta-53837-windows)" -ForegroundColor Green
 } elseif ($($VideoCard.Name) -like "*amd*") {
     Write-Host "Link to the latest video driver: " -NoNewline
+    Write-Host "(https://www.amd.com/en/support)" -ForegroundColor Green
+    Write-Host "You can also try the driver for Enshrouded: " -NoNewline
     Write-Host "(https://www.amd.com/en/support/kb/release-notes/rn-rad-win-23-40-02-03-enshrouded)" -ForegroundColor Green
-    Write-Host "You can also try a driver with enhanced support for Vulcan features: " -NoNewline
-    Write-Host "(https://drivers.amd.com/drivers/amd-software-adrenalin-edition-23.20.13.02-win10-win11-jan19-rdna_vk.exe)" -ForegroundColor Green
 } else {
     Write-Host "Video card not recognized."
 }
 # Completing script execution
+Write-Host ""
+Write-Host 'Even if after all the corrections you have made, the game continues to crash after some time, most likely the problem is in the game itself. Either you have a very large and complex "castle", or you have a large number of crops. (This problem seems to be known to developers and it remains only to wait for patches.)' -ForegroundColor Yellow
 Write-Host ""
 Write-Host "The computer must be restarted for the changes to take effect." -ForegroundColor Yellow
 Write-Host ""
