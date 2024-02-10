@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.0.7"
+$ver = "1.0.8"
 $Host.UI.RawUI.WindowTitle = "Enshrouder Tool Fix v$ver"
 # Checking whether the script is running with administrator rights
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -14,18 +14,19 @@ Write-Host "Script is running as an administrator. Proceeding with the work..." 
 Write-Host ""
 # Finding the path to the installed game folder on Steam
 $game_id = 1203620
-function Format-Json([parameter(mandatory, valuefrompipeline)][string] $json) {
-    $indent = 0;
-    ($json -split "`n" | % {
-        if ($_ -match '[\}\]]\s*,?\s*$') {
-            $indent--
-        }
-        $line = ('  ' * $indent) + $($_.trimstart() -replace '":  (["{[])', '": $1' -replace ':  ', ': ')
-        if ($_ -match '[\{\[]\s*$') {
-            $indent++
-        }
-        $line
-    }) -join "`n"
+function Format-Json([Parameter(Mandatory, ValueFromPipeline)][String] $json) {
+  $indent = 0;
+  ($json -Split '\n' |
+    % {
+      if ($_ -match '[\}\]]') {
+        $indent--
+      }
+      $line = (' ' * $indent * 2) + $_.TrimStart().Replace(':  ', ': ')
+      if ($_ -match '[\{\[]') {
+        $indent++
+      }
+      $line
+  }) -Join "`n"
 }
 try {
     $steamPath = (Get-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Valve\Steam" -Name "InstallPath").InstallPath
