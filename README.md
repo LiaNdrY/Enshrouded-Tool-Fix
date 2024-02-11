@@ -22,6 +22,10 @@ irm "https://raw.githubusercontent.com/LiaNdrY/Enshrouded-Tool-Fix/main/Enshroud
 
 ## List of changes:
 
+#### v1.0.11
+
+- Added unlocking of Vulkan Runtime files in the system of AMD video card users for successful update.
+
 #### v1.0.10
 
 - Fixed the logic for searching for a video card in the system

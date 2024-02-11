@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.0.10"
+$ver = "1.0.11"
 $Host.UI.RawUI.WindowTitle = "Enshrouder Tool Fix v$ver"
 # Checking whether the script is running with administrator rights
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -194,6 +194,41 @@ Write-Host "Installed Vulkan Runtime version: " -NoNewline
 Write-Host $CurDllVer -ForegroundColor Green
 Write-Host ""
 if ([version]$CurDllVer -lt [version]$LastVRVer) {
+    $vulkanFiles = @(
+        "$env:SystemRoot\System32\vulkan-1.dll"
+        "$env:SystemRoot\System32\vulkaninfo.exe"
+        "$env:SystemRoot\System32\vulkan-1-999-0-0-0.dll"
+        "$env:SystemRoot\System32\vulkaninfo-1-999-0-0-0.exe"
+        "$env:SystemRoot\SysWOW64\vulkan-1.dll"
+        "$env:SystemRoot\SysWOW64\vulkaninfo.exe"
+        "$env:SystemRoot\SysWOW64\vulkan-1-999-0-0-0.dll"
+        "$env:SystemRoot\SysWOW64\vulkaninfo-1-999-0-0-0.exe"
+    )
+    $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+    $messagePrinted = $false
+    foreach ($vulkanFile in $vulkanFiles) {
+        if (Test-Path $vulkanFile) {
+            try {
+                $fileOwner = (Get-Acl -Path $vulkanFile).Owner
+                if ($fileOwner -eq "NT AUTHORITY\SYSTEM" -or $fileOwner -eq "NT SERVICE\TrustedInstaller") {
+                    takeown /F $vulkanFile > $null
+                    & icacls $vulkanFile /grant:r "$($currentUser):(F)"  > $null
+                } else {
+                    if (-not $messagePrinted) {
+                        Write-Host "Vulkan Runtime files are not locked by the System." -ForegroundColor Green
+                        Write-Host ""
+                        $messagePrinted = $true
+                    }
+                }
+            } catch {
+                Write-Host "An error occurred while processing $vulkanFile" -ForegroundColor Red
+                Write-Host ""
+            }
+        } else {
+            Write-Host "File $vulkanFile does not exist." -ForegroundColor Yellow
+            Write-Host ""
+        }
+    }
     Write-Host "Downloading the latest Vulkan Runtime..."
     Write-Host ""
     $downloadUrl = "https://sdk.lunarg.com/sdk/download/latest/windows/vulkan-runtime.exe"
@@ -205,10 +240,11 @@ if ([version]$CurDllVer -lt [version]$LastVRVer) {
     Remove-Item -Path $downloadPath -Force
     Write-Host "Installation complete, checking Vulkan Runtime versions..."
     Write-Host ""
-    $dllPath = "$env:SystemRoot\System32\vulkan-1.dll"
     $CurDllVer = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($dllPath).FileVersion
-    Write-Host "Latest Vulkan Runtime version: " + $LastVRVer -ForegroundColor Green
-    Write-Host "Installed Vulkan Runtime version: " + $CurDllVer -ForegroundColor Green
+    Write-Host "Latest Vulkan Runtime version: " -NoNewline
+    Write-Host $LastVRVer -ForegroundColor Green
+    Write-Host "Installed Vulkan Runtime version: " -NoNewline
+    Write-Host $CurDllVer -ForegroundColor Green
     Write-Host ""
 }
 # Finding processes using the Vulkan API
@@ -294,6 +330,7 @@ if (Test-Path -Path $fileJson) {
         }
     }
     $json = Get-Content -Path $fileJson | ConvertFrom-Json
+    $json.graphics.windowMode = "Fullscreen"
     $json.graphics.windowPosition.x = 0
     $json.graphics.windowPosition.y = 0
     $json.graphics.windowSize.x = $($primaryMonitorWidth)
