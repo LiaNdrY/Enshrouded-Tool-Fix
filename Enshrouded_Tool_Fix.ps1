@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.0.9"
+$ver = "1.0.10"
 $Host.UI.RawUI.WindowTitle = "Enshrouder Tool Fix v$ver"
 # Checking whether the script is running with administrator rights
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -72,7 +72,18 @@ if ($matches.Matches.Count -gt 0) {
     exit
 }
 # Checking Vulkan API layer versions for old versions
-$Api_Video0 = (Get-ItemProperty -Path "HKLM:\HARDWARE\DEVICEMAP\VIDEO" -ErrorAction SilentlyContinue).'\Device\Video0' -replace '\\Registry\\Machine\\', 'HKLM:\\'
+$vCardPath = Get-ItemProperty -Path "HKLM:\HARDWARE\DEVICEMAP\VIDEO" -ErrorAction SilentlyContinue
+$minValue = [int]::MaxValue
+foreach ($property in $vCardPath.PSObject.Properties) {
+    if ($property.Value -like "\*\*\*\*\*\Video\{*}\*") {
+        $path = $property.Value -replace '\\Registry\\Machine\\', 'HKLM:\\'
+        $value = [int]($path -replace '.*\\(\d+)$', '$1')
+        if ($value -lt $minValue) {
+            $minValue = $value
+            $Api_Video0 = $path
+        }
+    }
+}
 $Api_Video_x64 = (Get-ItemProperty -Path "$Api_Video0" -ErrorAction SilentlyContinue).PSObject.Properties | Where-Object { $_.Name -match 'Vulkan' -and $_.Name -match 'Driver' -and $_.Name -notmatch 'Wow' }
 $Api_Video_x86 = (Get-ItemProperty -Path "$Api_Video0" -ErrorAction SilentlyContinue).PSObject.Properties | Where-Object { $_.Name -match 'Vulkan' -and $_.Name -match 'Driver' -and $_.Name -match 'Wow' }
 $paths = @(
@@ -401,18 +412,17 @@ if ($Ram -lt 16) {
 # Check VRAM
 Write-Host ""
 $VideoCard = Get-CimInstance -ClassName Win32_VideoController | Where-Object { $_.AdapterCompatibility }
-$vRam0 = (Get-ItemProperty -Path "HKLM:\HARDWARE\DEVICEMAP\VIDEO" -ErrorAction SilentlyContinue).'\Device\Video0' -replace '\\Registry\\Machine\\', 'HKLM:\\'
-$vRam1 = [Math]::Round((Get-ItemProperty -Path "$vRam0" -ErrorAction SilentlyContinue).'HardwareInformation.qwMemorySize' / 1024 / 1024 / 1024)
-if ($vRam1 -lt 6) {
+$vRam = [Math]::Round((Get-ItemProperty -Path "$Api_Video0" -ErrorAction SilentlyContinue).'HardwareInformation.qwMemorySize' / 1GB)
+if ($vRam -lt 6) {
     Write-Host "Video Card: " -NoNewline
     Write-Host $($VideoCard.Name) -NoNewline
-    Write-Host " ($vRam1 GB)" -ForegroundColor Red
+    Write-Host " ($vRam GB)" -ForegroundColor Red
     Write-Host "Attention: the amount of video memory is less than 6 GB; in order for the game to start, you must enter the steam key in the game parameters: " -NoNewline -ForegroundColor Yellow
     Write-Host "--disable-vram-check" -ForegroundColor Green
     Write-Host "Even if the game starts with this parameter, it will most likely crash sooner or later." -ForegroundColor Red
 } else {
     Write-Host "Video Card: " -NoNewline
-    Write-Host "$($VideoCard.Name) ($vRam1 GB)" -ForegroundColor Green
+    Write-Host "$($VideoCard.Name) ($vRam GB)" -ForegroundColor Green
 }
 Write-Host ""
 Write-Host "The texture quality setting affects the amount of video memory consumed by the game:" -ForegroundColor Yellow
