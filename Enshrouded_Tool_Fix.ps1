@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.0.11"
+$ver = "1.0.12"
 $Host.UI.RawUI.WindowTitle = "Enshrouder Tool Fix v$ver"
 # Checking whether the script is running with administrator rights
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -212,7 +212,7 @@ if ([version]$CurDllVer -lt [version]$LastVRVer) {
                 $fileOwner = (Get-Acl -Path $vulkanFile).Owner
                 if ($fileOwner -eq "NT AUTHORITY\SYSTEM" -or $fileOwner -eq "NT SERVICE\TrustedInstaller") {
                     takeown /F $vulkanFile > $null
-                    & icacls $vulkanFile /grant:r "$($currentUser):(F)"  > $null
+                    & icacls $vulkanFile /grant:r "$($currentUser):(F)" > $null
                 } else {
                     if (-not $messagePrinted) {
                         Write-Host "Vulkan Runtime files are not locked by the System." -ForegroundColor Green
@@ -281,12 +281,12 @@ if (Test-Path "$env:LOCALAPPDATA\NVIDIA") {
         if (Test-Path $path) {
             try {
                 Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue
+                Write-Host "Done" -ForegroundColor Green
             } catch {
                 Write-Host "Error deleting $path" -ForegroundColor Red
             }
         }
     }
-    Write-Host "Done" -ForegroundColor Green
 }
 # Clearing the cache of AMD video cards
 $paths_AMD = @(
@@ -302,12 +302,12 @@ if (Test-Path "$env:LOCALAPPDATA\AMD") {
         if (Test-Path $path) {
             try {
                 Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue
+                Write-Host "Done" -ForegroundColor Green
             } catch {
                 Write-Host "Error deleting $path" -ForegroundColor Red
             }
         }
     }
-    Write-Host "Done" -ForegroundColor Green
 }
 # Clearing the cache in the Steam directory
 Write-Host "Clearing game shader cache in $FolderCache\: " -NoNewline
@@ -439,9 +439,8 @@ $Ram = [Math]::Round((Get-CimInstance -ClassName Win32_ComputerSystem).TotalPhys
 if ($Ram -lt 16) {
     Write-Host "RAM: " -NoNewline
     Write-Host "$Ram GB" -ForegroundColor Red
-    Write-Host "Attention: the amount of RAM is less than 16 GB, in order for the game to start you need to enter the steam key in the game parameters: " -NoNewline -ForegroundColor Yellow
-    Write-Host "--disable-ram-check" -ForegroundColor Green
-    Write-Host "Even if the game starts with this parameter, it will most likely crash sooner or later." -ForegroundColor Red
+    Write-Host "Attention: the amount of RAM is less than 16 GB" -ForegroundColor Yellow
+    Write-Host "It is very likely that the game will show you a warning that your system does not meet the minimum requirements. You can acknowledge this message and proceed at your own risk." -ForegroundColor Yellow
 } else {
     Write-Host "RAM: " -NoNewline
     Write-Host "$Ram GB" -ForegroundColor Green
@@ -454,9 +453,9 @@ if ($vRam -lt 6) {
     Write-Host "Video Card: " -NoNewline
     Write-Host $($VideoCard.Name) -NoNewline
     Write-Host " ($vRam GB)" -ForegroundColor Red
-    Write-Host "Attention: the amount of video memory is less than 6 GB; in order for the game to start, you must enter the steam key in the game parameters: " -NoNewline -ForegroundColor Yellow
-    Write-Host "--disable-vram-check" -ForegroundColor Green
-    Write-Host "Even if the game starts with this parameter, it will most likely crash sooner or later." -ForegroundColor Red
+    Write-Host "Attention: the amount of video memory is less than 6 GB" -ForegroundColor Yellow
+    Write-Host "Additionally, with only 4GB of VRAM, the game limits texture settings. You can't change them in-game." -ForegroundColor Red
+    Write-Host "It is very likely that the game will show you a warning that your system does not meet the minimum requirements. You can acknowledge this message and proceed at your own risk." -ForegroundColor Yellow
 } else {
     Write-Host "Video Card: " -NoNewline
     Write-Host "$($VideoCard.Name) ($vRam GB)" -ForegroundColor Green
@@ -488,3 +487,4 @@ Write-Host ""
 Write-Host "The computer must be restarted for the changes to take effect." -ForegroundColor Yellow
 Write-Host ""
 Read-Host -Prompt "Press Enter to Exit"
+exit
