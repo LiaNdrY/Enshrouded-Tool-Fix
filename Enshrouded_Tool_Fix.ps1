@@ -281,12 +281,12 @@ if (Test-Path "$env:LOCALAPPDATA\NVIDIA") {
         if (Test-Path $path) {
             try {
                 Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue
-                Write-Host "Done" -ForegroundColor Green
             } catch {
                 Write-Host "Error deleting $path" -ForegroundColor Red
             }
         }
     }
+    Write-Host "Done" -ForegroundColor Green
 }
 # Clearing the cache of AMD video cards
 $paths_AMD = @(
@@ -302,12 +302,12 @@ if (Test-Path "$env:LOCALAPPDATA\AMD") {
         if (Test-Path $path) {
             try {
                 Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue
-                Write-Host "Done" -ForegroundColor Green
             } catch {
                 Write-Host "Error deleting $path" -ForegroundColor Red
             }
         }
     }
+    Write-Host "Done" -ForegroundColor Green
 }
 # Clearing the cache in the Steam directory
 Write-Host "Clearing game shader cache in $FolderCache\: " -NoNewline
