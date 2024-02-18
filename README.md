@@ -22,6 +22,11 @@ irm "https://raw.githubusercontent.com/LiaNdrY/Enshrouded-Tool-Fix/main/Enshroud
 
 ## List of changes:
 
+#### v1.0.14
+
+- Improved paging file checking system
+- Added checking for AVX instructions on the CPU
+
 #### v1.0.13
 
 - Added сhecking the parameters of the paging file

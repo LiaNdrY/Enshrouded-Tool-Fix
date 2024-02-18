@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.0.13"
+$ver = "1.0.14"
 $Host.UI.RawUI.WindowTitle = "Enshrouder Tool Fix v$ver"
 # Checking whether the script is running with administrator rights
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -433,15 +433,79 @@ if ($gameDvrEnabled -eq 0 -and $gameDvrPolicy -eq 0) {
     } else {
     }
 }
-# Checking the parameters of the paging file
+# Checking processor support on AVX instructions
 Write-Host ""
-$swapFile = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" -Name "PagingFiles").PagingFiles
-if ($swapFile -eq "?:\pagefile.sys") {
-    Write-Host "Auto-selection of the paging file size: " -NoNewline
+Write-Host "CPU Info..."
+Add-Type -TypeDefinition @"
+    using System;
+    using System.Runtime.InteropServices;
+
+    public class ProcessorInfo
+    {
+        [DllImport("kernel32.dll")]
+        public static extern IntPtr GetModuleHandle(string lpModuleName);
+
+        [DllImport("kernel32.dll")]
+        public static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
+
+        [DllImport("kernel32.dll")]
+        public static extern bool IsProcessorFeaturePresent(int ProcessorFeature);
+
+        public const int PF_AVX = 39;
+
+        public static bool IsAVXSupported()
+        {
+            IntPtr kernel32 = GetModuleHandle("kernel32.dll");
+            IntPtr procAddress = GetProcAddress(kernel32, "IsProcessorFeaturePresent");
+            return IsProcessorFeaturePresent(PF_AVX);
+        }
+    }
+"@
+$processorName = (Get-CimInstance -ClassName Win32_Processor).Name
+if ([ProcessorInfo]::IsAVXSupported()) {
+    Write-Host "Name CPU: $processorName"
+    Write-Host "AVX support: " -NoNewline
     Write-Host "Yes" -ForegroundColor Green
 } else {
+    Write-Host "Name CPU: $processorName"
+    Write-Host "AVX support: " -NoNewline
+    Write-Host "No" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Unfortunately, your processor does not support the AVX instruction set, the game will not be able to start without this set." -ForegroundColor Red
+}
+# Checking the parameters of the paging file
+$gameLog = "$gamePath_0\enshrouded.log"
+$textLogMemory = "*Could not allocate new memory block, error: out of memory*"
+if (Test-Path $gameLog) {
+    $logContent = Get-Content $gameLog
+    if ($logContent -like $textLogMemory) {
+        $result = $true
+    } else {
+        $result = $false
+    }
+} else {
+    $result = $null
+}
+Write-Host ""
+$swapFile = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" -Name "PagingFiles").PagingFiles
+if (($swapFile -eq "?:\pagefile.sys") -and ($result -eq $true)) {
+    Write-Host "Auto-selection of the paging file size: " -NoNewline
+    Write-Host "Yes" -ForegroundColor Green
+    Write-Host "The message 'Out of memory' was found in the log file." -ForegroundColor Yellow
+}
+elseif (($swapFile -ne "?:\pagefile.sys") -and (($result -eq $false) -or ($result -eq $null))) {
     Write-Host "Auto-selection of the paging file size: " -NoNewline
     Write-Host "No" -ForegroundColor Yellow
+    Write-Host "The message 'Out of memory' was not found in the log file." -ForegroundColor Yellow
+}
+elseif ($swapFile -eq "?:\pagefile.sys") {
+    Write-Host "Auto-selection of the paging file size: " -NoNewline
+    Write-Host "Yes" -ForegroundColor Green
+}
+elseif (($swapFile -ne "?:\pagefile.sys") -and ($result -eq $true)) {
+    Write-Host "Auto-selection of the paging file size: " -NoNewline
+    Write-Host "No" -ForegroundColor Yellow
+    Write-Host "The message 'Out of memory' was found in the log file." -ForegroundColor Yellow
     Write-Host "If your game crashes immediately, it is advisable to set the auto-selection of the paging file size by the system." -ForegroundColor Yellow
     $answer = Read-Host "Do you want to do this? (Y - Yes / Any - No)"
     if ($answer -eq "Y") {
@@ -493,8 +557,8 @@ if ($vRam -lt 6) {
     Write-Host "$($VideoCard.Name) ($vRam GB)" -ForegroundColor Green
 }
 Write-Host ""
-Write-Host "The texture quality setting affects the amount of video memory consumed by the game:" -ForegroundColor Yellow
-Write-Host "Low (~5 GB), Medium (~5.5 GB), High (~6.5 GB), Ultra (~8.5 GB)" -ForegroundColor Yellow
+Write-Host "The Texture Resolution setting affects the amount of video memory consumed by the game:" -ForegroundColor Yellow
+Write-Host "Performance (~5 GB), Balanced (~5.5 GB), Quality (~6.5 GB), Max.Quality (~8.5 GB)" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "It's recommended to update your video card drivers if you have an older version and a newer one is available." -ForegroundColor Yellow
 Write-Host "After that, you must run this utility again to check the Vulkan API version." -ForegroundColor Yellow
