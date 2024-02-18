@@ -22,6 +22,10 @@ irm "https://raw.githubusercontent.com/LiaNdrY/Enshrouded-Tool-Fix/main/Enshroud
 
 ## List of changes:
 
+#### v1.0.13
+
+- Added сhecking the parameters of the paging file
+
 #### v1.0.12
 
 - Minor fixes

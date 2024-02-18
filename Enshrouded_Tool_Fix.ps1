@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.0.12"
+$ver = "1.0.13"
 $Host.UI.RawUI.WindowTitle = "Enshrouder Tool Fix v$ver"
 # Checking whether the script is running with administrator rights
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -430,6 +430,38 @@ if ($gameDvrEnabled -eq 0 -and $gameDvrPolicy -eq 0) {
         Set-ItemProperty -Path "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -Value 0 -Type DWORD
         Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR" -Name "value" -Value 0 -Type DWORD
         Write-Host "Off" -ForegroundColor Green
+    } else {
+    }
+}
+# Checking the parameters of the paging file
+Write-Host ""
+$swapFile = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" -Name "PagingFiles").PagingFiles
+if ($swapFile -eq "?:\pagefile.sys") {
+    Write-Host "Auto-selection of the paging file size: " -NoNewline
+    Write-Host "Yes" -ForegroundColor Green
+} else {
+    Write-Host "Auto-selection of the paging file size: " -NoNewline
+    Write-Host "No" -ForegroundColor Yellow
+    Write-Host "If your game crashes immediately, it is advisable to set the auto-selection of the paging file size by the system." -ForegroundColor Yellow
+    $answer = Read-Host "Do you want to do this? (Y - Yes / Any - No)"
+    if ($answer -eq "Y") {
+        SystemPropertiesPerformance.exe /pagefile
+        Write-Host ""
+        Write-Host "- Click the " -NoNewline
+        Write-Host "'Change'" -NoNewline -ForegroundColor Green
+        Write-Host " button"
+        Write-Host "- Select the disk on which you have a paging file"
+        Write-Host "- Specify " -NoNewline
+        Write-Host "'System managed size'" -NoNewline -ForegroundColor Green
+        Write-Host ", then click the " -NoNewline
+        Write-Host "'Set'" -NoNewline -ForegroundColor Green
+        Write-Host " button"
+        Write-Host "- After that, check the box " -NoNewline
+        Write-Host "'Automatically manage paging file size for all drives'" -ForegroundColor Green
+        Write-Host "- Click " -NoNewline
+        Write-Host "'Ok'" -ForegroundColor Green
+        Write-Host "The system will ask you to reboot for the changes to take effect, postpone this process and exit this script, after which you can reboot the system." -ForegroundColor Yellow
+        Read-Host -Prompt "Press Enter to Continue"
     } else {
     }
 }
