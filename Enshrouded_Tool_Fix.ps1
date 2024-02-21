@@ -1,17 +1,41 @@
 # Creator LiaNdrY
-$ver = "1.0.14"
+$ver = "1.1.0"
 $Host.UI.RawUI.WindowTitle = "Enshrouder Tool Fix v$ver"
+$logFilePath = "$env:TEMP\Enshrouded_Tool_Fix.log"
+if (Test-Path -Path $logFilePath) {
+    Remove-Item -Path $logFilePath
+}
+# Function for writing to a file and outputting to the console
+function WHaL {
+    param(
+        [Parameter(ValueFromPipeline=$true)]
+        [string]$Message,
+        [switch]$NoNewline,
+        [System.ConsoleColor]$ForegroundColor = [System.ConsoleColor]::Gray
+    )
+    if ([string]::IsNullOrWhiteSpace($Message)) {
+        Write-Host ""
+        Write-Output "" | Out-File -FilePath $logFilePath -Encoding UTF8 -Append
+        return
+    }
+    $Message | Out-File -FilePath $logFilePath -Encoding UTF8 -Append -NoNewline:$NoNewline
+    if ($NoNewline) {
+        Write-Host $Message -NoNewline -ForegroundColor $ForegroundColor
+    } else {
+        Write-Host $Message -ForegroundColor $ForegroundColor
+    }
+}
 # Checking whether the script is running with administrator rights
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
-    Write-Host "This script must be run as an administrator." -ForegroundColor Yellow
-    Write-Host ""
-    Write-Host "Press Enter to close the console..."
+    WHaL "This script must be run as an administrator." -ForegroundColor Yellow
+    WHaL ""
+    WHaL "Press Enter to close the console..."
     [Console]::ReadLine() | Out-Null
     exit
 }
-Write-Host "Script is running as an administrator. Proceeding with the work..." -ForegroundColor Green
-Write-Host ""
+WHaL "Script is running as an administrator. Proceeding with the work..." -ForegroundColor Green
+WHaL ""
 # Finding the path to the installed game folder on Steam
 $game_id = 1203620
 function Format-Json([Parameter(Mandatory, ValueFromPipeline)][String] $json) {
@@ -31,16 +55,16 @@ function Format-Json([Parameter(Mandatory, ValueFromPipeline)][String] $json) {
 try {
     $steamPath = (Get-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Valve\Steam" -Name "InstallPath").InstallPath
 } catch {
-    Write-Host "Steam is not installed. Further operation of the script is impossible." -ForegroundColor Red
-    Write-Host ""
+    WHaL "Steam is not installed. Further operation of the script is impossible." -ForegroundColor Red
+    WHaL ""
     Read-Host -Prompt "Press Enter to Exit"
     exit
 }
 try {
     $logFile = "$steamPath\logs\console_log.txt"
 } catch {
-    Write-Host "Cannot find file $logFile. Reinstall Steam. Further operation of the script is impossible." -ForegroundColor Red
-    Write-Host ""
+    WHaL "Cannot find file $logFile. Reinstall Steam. Further operation of the script is impossible." -ForegroundColor Red
+    WHaL ""
     Read-Host -Prompt "Press Enter to Exit"
     exit
 }
@@ -57,17 +81,17 @@ if ($matches.Matches.Count -gt 0) {
         $gamePath_0 = $gamePath_0.Substring(1)
     }
     if (Test-Path $gamePath_1) {
-        Write-Host "Found installed game in: $gamePath_0"
-        Write-Host ""
+        WHaL "Found installed game in: $gamePath_0"
+        WHaL ""
     } else {
-        Write-Host "Path to the installed game does not exist: $gamePath_0"
-        Write-Host ""
+        WHaL "Path to the installed game does not exist: $gamePath_0"
+        WHaL ""
         Read-Host -Prompt "Press Enter to Exit"
         exit
     }
 } else {
-    Write-Host "No installed game found"
-    Write-Host ""
+    WHaL "No installed game found"
+    WHaL ""
     Read-Host -Prompt "Press Enter to Exit"
     exit
 }
@@ -148,7 +172,7 @@ foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Pa
                 $uniqueKeyPaths[$entry.Name].Description = $description
                 $uniqueKeyPaths[$entry.Name].Api_Version = $apiVersion
             } else {
-                Write-Host "File $Api_Video_x64.value not found." -ForegroundColor Red
+                WHaL "File $Api_Video_x64.value not found." -ForegroundColor Red
             }
         }
         if ($jsonPath -eq $Api_Video_x86.name) {
@@ -160,39 +184,39 @@ foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Pa
                 $uniqueKeyPaths[$entry.Name].Description = $description
                 $uniqueKeyPaths[$entry.Name].Api_Version = $apiVersion
             } else {
-                Write-Host "File $Api_Video_x86.value not found." -ForegroundColor Red
+                WHaL "File $Api_Video_x86.value not found." -ForegroundColor Red
             }
         }
     }
 }
-Write-Host "Checking Vulkan layer API versions..."
+WHaL "Checking Vulkan layer API versions..."
 foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Path]::GetFileName($_.Key) }) {
     $apiVersion = if ([string]::IsNullOrWhiteSpace($entry.Value.Api_Version)) { "0.0.000" } else { $entry.Value.Api_Version }
     $description = if ([string]::IsNullOrWhiteSpace($entry.Value.Description)) { "Layer name is empty" } else { $entry.Value.Description }
     if ([version]$apiVersion -lt [version]"1.2") {
-        Write-Host "$description $($entry.Value.Architecture)" -NoNewline -ForegroundColor Red
-        Write-Host " (v$apiVersion) - this version is outdated and will be removed" -ForegroundColor Red
+        WHaL "$description $($entry.Value.Architecture)" -NoNewline -ForegroundColor Red
+        WHaL " (v$apiVersion) - this version is outdated and will be removed" -ForegroundColor Red
         #if ($entry.Key -notlike "*json*") {
         Remove-ItemProperty -Path $entry.Value.Path -Name $entry.Key -ErrorAction SilentlyContinue
         #}
     } else {
-        Write-Host "$description $($entry.Value.Architecture)" -NoNewline
-        Write-Host " (v$apiVersion)" -ForegroundColor Green
+        WHaL "$description $($entry.Value.Architecture)" -NoNewline
+        WHaL " (v$apiVersion)" -ForegroundColor Green
     }
 }
 # Checking Vulkan API Versions
-Write-Host ""
+WHaL ""
 $FolderCache = $gamePath_0.Substring(0, $gamePath_0.Length - 18) + "\shadercache\$game_id"
-Write-Host "Checking Vulkan Runtime versions..."
-Write-Host ""
+WHaL "Checking Vulkan Runtime versions..."
+WHaL ""
 $LastVRVer = (Invoke-WebRequest -Uri 'https://sdk.lunarg.com/sdk/download/latest/windows/config.json' -UseBasicParsing | ConvertFrom-Json).version
-Write-Host "Latest Vulkan Runtime version: " -NoNewline
-Write-Host $LastVRVer -ForegroundColor Green
+WHaL "Latest Vulkan Runtime version: " -NoNewline
+WHaL $LastVRVer -ForegroundColor Green
 $dllPath = "$env:SystemRoot\System32\vulkan-1.dll"
 $CurDllVer = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($dllPath).FileVersion
-Write-Host "Installed Vulkan Runtime version: " -NoNewline
-Write-Host $CurDllVer -ForegroundColor Green
-Write-Host ""
+WHaL "Installed Vulkan Runtime version: " -NoNewline
+WHaL $CurDllVer -ForegroundColor Green
+WHaL ""
 if ([version]$CurDllVer -lt [version]$LastVRVer) {
     $vulkanFiles = @(
         "$env:SystemRoot\System32\vulkan-1.dll"
@@ -215,40 +239,40 @@ if ([version]$CurDllVer -lt [version]$LastVRVer) {
                     & icacls $vulkanFile /grant:r "$($currentUser):(F)" > $null
                 } else {
                     if (-not $messagePrinted) {
-                        Write-Host "Vulkan Runtime files are not locked by the System." -ForegroundColor Green
-                        Write-Host ""
+                        WHaL "Vulkan Runtime files are not locked by the System." -ForegroundColor Green
+                        WHaL ""
                         $messagePrinted = $true
                     }
                 }
             } catch {
-                Write-Host "An error occurred while processing $vulkanFile" -ForegroundColor Red
-                Write-Host ""
+                WHaL "An error occurred while processing $vulkanFile" -ForegroundColor Red
+                WHaL ""
             }
         } else {
-            Write-Host "File $vulkanFile does not exist." -ForegroundColor Yellow
-            Write-Host ""
+            WHaL "File $vulkanFile does not exist." -ForegroundColor Yellow
+            WHaL ""
         }
     }
-    Write-Host "Downloading the latest Vulkan Runtime..."
-    Write-Host ""
+    WHaL "Downloading the latest Vulkan Runtime..."
+    WHaL ""
     $downloadUrl = "https://sdk.lunarg.com/sdk/download/latest/windows/vulkan-runtime.exe"
     $downloadPath = "$env:TEMP\vulkan-runtime.exe"
     Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadPath
-    Write-Host "Installing the latest Vulkan Runtime..."
-    Write-Host ""
+    WHaL "Installing the latest Vulkan Runtime..."
+    WHaL ""
     Start-Process -FilePath $downloadPath -ArgumentList "/S" -Wait
     Remove-Item -Path $downloadPath -Force
-    Write-Host "Installation complete, checking Vulkan Runtime versions..."
-    Write-Host ""
+    WHaL "Installation complete, checking Vulkan Runtime versions..."
+    WHaL ""
     $CurDllVer = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($dllPath).FileVersion
-    Write-Host "Latest Vulkan Runtime version: " -NoNewline
-    Write-Host $LastVRVer -ForegroundColor Green
-    Write-Host "Installed Vulkan Runtime version: " -NoNewline
-    Write-Host $CurDllVer -ForegroundColor Green
-    Write-Host ""
+    WHaL "Latest Vulkan Runtime version: " -NoNewline
+    WHaL $LastVRVer -ForegroundColor Green
+    WHaL "Installed Vulkan Runtime version: " -NoNewline
+    WHaL $CurDllVer -ForegroundColor Green
+    WHaL ""
 }
 # Finding processes using the Vulkan API
-Write-Host "Looking for running processes using Vulkan..."
+WHaL "Looking for running processes using Vulkan..."
 $processes = Get-Process
 $vulkanProcesses = @()
 foreach ($process in $processes) {
@@ -261,8 +285,8 @@ foreach ($process in $processes) {
     }
 }
 if ($vulkanProcesses.Count -eq 0) {
-    Write-Host "Processes using Vulkan were not found." -ForegroundColor Green
-    Write-Host ""
+    WHaL "Processes using Vulkan were not found." -ForegroundColor Green
+    WHaL ""
 } else {
     $vulkanProcesses | Select-Object ProcessName, Id, Path | Out-Host
 }
@@ -276,17 +300,17 @@ $paths_nVidia = @(
     "$env:ProgramData\NVIDIA Corporation\NvTelemetry"
 )
 if (Test-Path "$env:LOCALAPPDATA\NVIDIA") {
-    Write-Host "Clearing nVidia GPU cache: " -NoNewline
+    WHaL "Clearing nVidia GPU cache: " -NoNewline
     foreach ($path in $paths_nVidia) {
         if (Test-Path $path) {
             try {
                 Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue
             } catch {
-                Write-Host "Error deleting $path" -ForegroundColor Red
+                WHaL "Error deleting $path" -ForegroundColor Red
             }
         }
     }
-    Write-Host "Done" -ForegroundColor Green
+    WHaL "Done" -ForegroundColor Green
 }
 # Clearing the cache of AMD video cards
 $paths_AMD = @(
@@ -297,29 +321,29 @@ $paths_AMD = @(
     "$env:LOCALAPPDATA\AMD\VkCache"
 )
 if (Test-Path "$env:LOCALAPPDATA\AMD") {
-    Write-Host "Clearing AMD GPU cache: " -NoNewline
+    WHaL "Clearing AMD GPU cache: " -NoNewline
     foreach ($path in $paths_AMD) {
         if (Test-Path $path) {
             try {
                 Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue
             } catch {
-                Write-Host "Error deleting $path" -ForegroundColor Red
+                WHaL "Error deleting $path" -ForegroundColor Red
             }
         }
     }
-    Write-Host "Done" -ForegroundColor Green
+    WHaL "Done" -ForegroundColor Green
 }
 # Clearing the cache in the Steam directory
-Write-Host "Clearing game shader cache in $FolderCache\: " -NoNewline
+WHaL "Clearing game shader cache in $FolderCache\: " -NoNewline
 Remove-Item -Path $FolderCache -Recurse -Force -ErrorAction SilentlyContinue
-Write-Host "Done" -ForegroundColor Green
-Write-Host ""
-Write-Host "After starting the game, it will start recompiling shaders after entering your world, shader compilation will continue (this will take some time ~10 min), you can observe the progress at the bottom of the menu by pressing ESC" -ForegroundColor Yellow
+WHaL "Done" -ForegroundColor Green
+WHaL ""
+WHaL "After starting the game, it will start recompiling shaders after entering your world, shader compilation will continue (this will take some time ~10 min), you can observe the progress at the bottom of the menu by pressing ESC" -ForegroundColor Yellow
 # Setting the native resolution in the game
-Write-Host ""
+WHaL ""
 $fileJson = "$gamePath_0\enshrouded_local.json"
 if (Test-Path -Path $fileJson) {
-    Write-Host "Set the native resolution for the game: " -NoNewline
+    WHaL "Set the native resolution for the game: " -NoNewline
     Add-Type -AssemblyName System.Windows.Forms
     $screens = [System.Windows.Forms.Screen]::AllScreens
     foreach ($screen in $screens) {
@@ -341,22 +365,22 @@ if (Test-Path -Path $fileJson) {
     $json | ConvertTo-Json -Depth 100 | Format-Json |
         ForEach-Object {$_ -replace "(?m)  (?<=^(?:  )*)", "`t" } |
         Set-Content -Path $fileJson
-    Write-Host "Done ($($primaryMonitorWidth)x$($primaryMonitorHeight))" -ForegroundColor Green
-    Write-Host ""
+    WHaL "Done ($($primaryMonitorWidth)x$($primaryMonitorHeight))" -ForegroundColor Green
+    WHaL ""
 } else {
-    Write-Host "Set the native resolution for the game: " -NoNewline
-    Write-Host "The enshrouded_local.json file is missing from the game folder." -ForegroundColor Red
-    Write-Host ""
+    WHaL "Set the native resolution for the game: " -NoNewline
+    WHaL "The enshrouded_local.json file is missing from the game folder." -ForegroundColor Red
+    WHaL ""
 }
 # Setting the minimum FOV
 $fileJsonSG = "$env:USERPROFILE\Saved Games\Enshrouded\enshrouded_user.json"
 if (Test-Path -Path $fileJsonSG) {
-    Write-Host "Set the minimum FOV in the game: " -NoNewline
+    WHaL "Set the minimum FOV in the game: " -NoNewline
     $json = Get-Content -Path $fileJsonSG -Raw | ConvertFrom-Json
     if ($json.graphics -and $json.graphics.PSObject.Properties.Name -contains 'fov') {
         $json.graphics.fov = "42480000"
     } else {
-        Write-Host "The 'fov' property does not exist in the enshrouded_user.json file." -ForegroundColor Yellow
+        WHaL "The 'fov' property does not exist in the enshrouded_user.json file." -ForegroundColor Yellow
         if (!$json.graphics) {
             $json | Add-Member -NotePropertyName 'graphics' -NotePropertyValue ([PSCustomObject]@{})
         }
@@ -365,13 +389,13 @@ if (Test-Path -Path $fileJsonSG) {
     $json | ConvertTo-Json -Depth 100 | Format-Json |
         ForEach-Object {$_ -replace "(?m)  (?<=^(?:  )*)", "`t" } |
         Set-Content -Path $fileJsonSG
-    Write-Host "Done" -ForegroundColor Green
-    Write-Host "In the future, you can increase the FOV in the game settings if it stops crashing." -ForegroundColor Yellow
-    Write-Host ""
+    WHaL "Done" -ForegroundColor Green
+    WHaL "In the future, you can increase the FOV in the game settings if it stops crashing." -ForegroundColor Yellow
+    WHaL ""
 } else {
-    Write-Host "Set the minimum FOV in the game: " -NoNewline
-    Write-Host "The enshrouded_user.json file is missing from the Saved Games folder." -ForegroundColor Red
-    Write-Host ""
+    WHaL "Set the minimum FOV in the game: " -NoNewline
+    WHaL "The enshrouded_user.json file is missing from the Saved Games folder." -ForegroundColor Red
+    WHaL ""
 }
 # Set Powerplan
 $guids = @{
@@ -383,16 +407,16 @@ $powerSchemes = powercfg -l
 $activeGUID = ($powerSchemes | Select-String -Pattern '(?<=\().+?(?=\))' -AllMatches).Matches.Value
 if ($activeGUID -eq $guids["Balanced"] -or $activeGUID -eq $guids["Power saver"]) {
     powercfg /S $guids["High performance"]
-    Write-Host "Changing the power saving scheme to 'High Performance': " -NoNewline
-    Write-Host "Done" -ForegroundColor Green
+    WHaL "Changing the power saving scheme to 'High Performance': " -NoNewline
+    WHaL "Done" -ForegroundColor Green
 } else {
     $powerScheme = Get-CimInstance -Namespace root\cimv2\power -ClassName Win32_PowerPlan -Filter "IsActive='true'"
-    Write-Host "Changing the power saving scheme to 'High Performance': " -NoNewline
-    Write-Host "The scheme has not been changed since it is already installed - " -ForegroundColor Yellow -NoNewline
-    Write-Host $powerScheme.ElementName -ForegroundColor Yellow
+    WHaL "Changing the power saving scheme to 'High Performance': " -NoNewline
+    WHaL "The scheme has not been changed since it is already installed - " -ForegroundColor Yellow -NoNewline
+    WHaL $powerScheme.ElementName -ForegroundColor Yellow
 }
 # Increase system responsiveness and network throughput
-Write-Host ""
+WHaL ""
 $perfomanceSystem = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"
 $values = @{
     "NetworkThrottlingIndex" = 20
@@ -404,38 +428,38 @@ if (!(Test-Path $perfomanceSystem)) {
 foreach ($key in $values.Keys) {
     Set-ItemProperty -Path $perfomanceSystem -Name $key -Value $values[$key] -Type "DWord"
 }
-Write-Host "Improve input responsiveness and network throughput: " -NoNewline
-Write-Host "Done" -ForegroundColor Green
-Write-Host ""
+WHaL "Improve input responsiveness and network throughput: " -NoNewline
+WHaL "Done" -ForegroundColor Green
+WHaL ""
 # Enable/disable GameDVR
 $gameDvrEnabled = (Get-ItemProperty -Path "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -ErrorAction SilentlyContinue).GameDVR_Enabled
 $gameDvrPolicy = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR" -Name "value" -ErrorAction SilentlyContinue).value
-Write-Host "GameDVR indirectly affects performance in games; it is advisable to disable it if you have a weak video card." -ForegroundColor Yellow
+WHaL "GameDVR indirectly affects performance in games; it is advisable to disable it if you have a weak video card." -ForegroundColor Yellow
 if ($gameDvrEnabled -eq 0 -and $gameDvrPolicy -eq 0) {
-    Write-Host "GameDVR Status: " -NoNewline
-    Write-Host "Off" -ForegroundColor Green
+    WHaL "GameDVR Status: " -NoNewline
+    WHaL "Off" -ForegroundColor Green
     $answer = Read-Host "Want to enable GameDVR? (Y - Yes / Any - No)"
     if ($answer -eq "Y") {
-        Write-Host "GameDVR Status: " -NoNewline
+        WHaL "GameDVR Status: " -NoNewline
         Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR" -Name "value" -Value 1 -Type DWORD
-        Write-Host "On" -ForegroundColor Green
+        WHaL "On" -ForegroundColor Green
     } else {
     }
 } else {
-    Write-Host "GameDVR Status: " -NoNewline
-    Write-Host "On" -ForegroundColor Green
+    WHaL "GameDVR Status: " -NoNewline
+    WHaL "On" -ForegroundColor Green
     $answer = Read-Host "Want to disable GameDVR? (Y - Yes / Any - No)"
     if ($answer -eq "Y") {
-        Write-Host "GameDVR Status: " -NoNewline
+        WHaL "GameDVR Status: " -NoNewline
         Set-ItemProperty -Path "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -Value 0 -Type DWORD
         Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR" -Name "value" -Value 0 -Type DWORD
-        Write-Host "Off" -ForegroundColor Green
+        WHaL "Off" -ForegroundColor Green
     } else {
     }
 }
 # Checking processor support on AVX instructions
-Write-Host ""
-Write-Host "CPU Info..."
+WHaL ""
+WHaL "CPU Info..."
 Add-Type -TypeDefinition @"
     using System;
     using System.Runtime.InteropServices;
@@ -463,15 +487,15 @@ Add-Type -TypeDefinition @"
 "@
 $processorName = (Get-CimInstance -ClassName Win32_Processor).Name
 if ([ProcessorInfo]::IsAVXSupported()) {
-    Write-Host "Name CPU: $processorName"
-    Write-Host "AVX support: " -NoNewline
-    Write-Host "Yes" -ForegroundColor Green
+    WHaL "Name CPU: $processorName"
+    WHaL "AVX support: " -NoNewline
+    WHaL "Yes" -ForegroundColor Green
 } else {
-    Write-Host "Name CPU: $processorName"
-    Write-Host "AVX support: " -NoNewline
-    Write-Host "No" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Unfortunately, your processor does not support the AVX instruction set, the game will not be able to start without this set." -ForegroundColor Red
+    WHaL "Name CPU: $processorName"
+    WHaL "AVX support: " -NoNewline
+    WHaL "No" -ForegroundColor Red
+    WHaL ""
+    WHaL "Unfortunately, your processor does not support the AVX instruction set, the game will not be able to start without this set." -ForegroundColor Red
 }
 # Checking the parameters of the paging file
 $gameLog = "$gamePath_0\enshrouded.log"
@@ -486,101 +510,109 @@ if (Test-Path $gameLog) {
 } else {
     $result = $null
 }
-Write-Host ""
+WHaL ""
 $swapFile = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" -Name "PagingFiles").PagingFiles
 if (($swapFile -eq "?:\pagefile.sys") -and ($result -eq $true)) {
-    Write-Host "Auto-selection of the paging file size: " -NoNewline
-    Write-Host "Yes" -ForegroundColor Green
-    Write-Host "The message 'Out of memory' was found in the log file." -ForegroundColor Yellow
+    WHaL "Auto-selection of the paging file size: " -NoNewline
+    WHaL "Yes" -ForegroundColor Green
+    WHaL "The message 'Out of memory' was found in the log file." -ForegroundColor Yellow
 }
 elseif (($swapFile -ne "?:\pagefile.sys") -and (($result -eq $false) -or ($result -eq $null))) {
-    Write-Host "Auto-selection of the paging file size: " -NoNewline
-    Write-Host "No" -ForegroundColor Yellow
-    Write-Host "The message 'Out of memory' was not found in the log file." -ForegroundColor Yellow
+    WHaL "Auto-selection of the paging file size: " -NoNewline
+    WHaL "No" -ForegroundColor Yellow
+    WHaL "The message 'Out of memory' was not found in the log file." -ForegroundColor Yellow
 }
 elseif ($swapFile -eq "?:\pagefile.sys") {
-    Write-Host "Auto-selection of the paging file size: " -NoNewline
-    Write-Host "Yes" -ForegroundColor Green
+    WHaL "Auto-selection of the paging file size: " -NoNewline
+    WHaL "Yes" -ForegroundColor Green
 }
 elseif (($swapFile -ne "?:\pagefile.sys") -and ($result -eq $true)) {
-    Write-Host "Auto-selection of the paging file size: " -NoNewline
-    Write-Host "No" -ForegroundColor Yellow
-    Write-Host "The message 'Out of memory' was found in the log file." -ForegroundColor Yellow
-    Write-Host "If your game crashes immediately, it is advisable to set the auto-selection of the paging file size by the system." -ForegroundColor Yellow
+    WHaL "Auto-selection of the paging file size: " -NoNewline
+    WHaL "No" -ForegroundColor Yellow
+    WHaL "The message 'Out of memory' was found in the log file." -ForegroundColor Yellow
+    WHaL "If your game crashes immediately, it is advisable to set the auto-selection of the paging file size by the system." -ForegroundColor Yellow
     $answer = Read-Host "Do you want to do this? (Y - Yes / Any - No)"
     if ($answer -eq "Y") {
         SystemPropertiesPerformance.exe /pagefile
-        Write-Host ""
-        Write-Host "- Click the " -NoNewline
-        Write-Host "'Change'" -NoNewline -ForegroundColor Green
-        Write-Host " button"
-        Write-Host "- Select the disk on which you have a paging file"
-        Write-Host "- Specify " -NoNewline
-        Write-Host "'System managed size'" -NoNewline -ForegroundColor Green
-        Write-Host ", then click the " -NoNewline
-        Write-Host "'Set'" -NoNewline -ForegroundColor Green
-        Write-Host " button"
-        Write-Host "- After that, check the box " -NoNewline
-        Write-Host "'Automatically manage paging file size for all drives'" -ForegroundColor Green
-        Write-Host "- Click " -NoNewline
-        Write-Host "'Ok'" -ForegroundColor Green
-        Write-Host "The system will ask you to reboot for the changes to take effect, postpone this process and exit this script, after which you can reboot the system." -ForegroundColor Yellow
+        WHaL ""
+        WHaL "- Click the " -NoNewline
+        WHaL "'Change'" -NoNewline -ForegroundColor Green
+        WHaL " button"
+        WHaL "- Select the disk on which you have a paging file"
+        WHaL "- Specify " -NoNewline
+        WHaL "'System managed size'" -NoNewline -ForegroundColor Green
+        WHaL ", then click the " -NoNewline
+        WHaL "'Set'" -NoNewline -ForegroundColor Green
+        WHaL " button"
+        WHaL "- After that, check the box " -NoNewline
+        WHaL "'Automatically manage paging file size for all drives'" -ForegroundColor Green
+        WHaL "- Click " -NoNewline
+        WHaL "'Ok'" -ForegroundColor Green
+        WHaL "The system will ask you to reboot for the changes to take effect, postpone this process and exit this script, after which you can reboot the system." -ForegroundColor Yellow
         Read-Host -Prompt "Press Enter to Continue"
     } else {
     }
 }
 # Check RAM
-Write-Host ""
+WHaL ""
 $Ram = [Math]::Round((Get-CimInstance -ClassName Win32_ComputerSystem).TotalPhysicalMemory / 1GB)
 if ($Ram -lt 16) {
-    Write-Host "RAM: " -NoNewline
-    Write-Host "$Ram GB" -ForegroundColor Red
-    Write-Host "Attention: the amount of RAM is less than 16 GB" -ForegroundColor Yellow
-    Write-Host "It is very likely that the game will show you a warning that your system does not meet the minimum requirements. You can acknowledge this message and proceed at your own risk." -ForegroundColor Yellow
+    WHaL "RAM: " -NoNewline
+    WHaL "$Ram GB" -ForegroundColor Red
+    WHaL "Attention: the amount of RAM is less than 16 GB" -ForegroundColor Yellow
+    WHaL "It is very likely that the game will show you a warning that your system does not meet the minimum requirements. You can acknowledge this message and proceed at your own risk." -ForegroundColor Yellow
 } else {
-    Write-Host "RAM: " -NoNewline
-    Write-Host "$Ram GB" -ForegroundColor Green
+    WHaL "RAM: " -NoNewline
+    WHaL "$Ram GB" -ForegroundColor Green
 }
 # Check VRAM
-Write-Host ""
+WHaL ""
 $VideoCard = Get-CimInstance -ClassName Win32_VideoController | Where-Object { $_.AdapterCompatibility }
 $vRam = [Math]::Round((Get-ItemProperty -Path "$Api_Video0" -ErrorAction SilentlyContinue).'HardwareInformation.qwMemorySize' / 1GB)
 if ($vRam -lt 6) {
-    Write-Host "Video Card: " -NoNewline
-    Write-Host $($VideoCard.Name) -NoNewline
-    Write-Host " ($vRam GB)" -ForegroundColor Red
-    Write-Host "Attention: the amount of video memory is less than 6 GB" -ForegroundColor Yellow
-    Write-Host "Additionally, with only 4GB of VRAM, the game limits texture settings. You can't change them in-game." -ForegroundColor Red
-    Write-Host "It is very likely that the game will show you a warning that your system does not meet the minimum requirements. You can acknowledge this message and proceed at your own risk." -ForegroundColor Yellow
+    WHaL "Video Card: " -NoNewline
+    WHaL $($VideoCard.Name) -NoNewline
+    WHaL " ($vRam GB)" -ForegroundColor Red
+    WHaL "Attention: the amount of video memory is less than 6 GB" -ForegroundColor Yellow
+    WHaL "Additionally, with only 4GB of VRAM, the game limits texture settings. You can't change them in-game." -ForegroundColor Red
+    WHaL "It is very likely that the game will show you a warning that your system does not meet the minimum requirements. You can acknowledge this message and proceed at your own risk." -ForegroundColor Yellow
 } else {
-    Write-Host "Video Card: " -NoNewline
-    Write-Host "$($VideoCard.Name) ($vRam GB)" -ForegroundColor Green
+    WHaL "Video Card: " -NoNewline
+    WHaL "$($VideoCard.Name) ($vRam GB)" -ForegroundColor Green
 }
-Write-Host ""
-Write-Host "The Texture Resolution setting affects the amount of video memory consumed by the game:" -ForegroundColor Yellow
-Write-Host "Performance (~5 GB), Balanced (~5.5 GB), Quality (~6.5 GB), Max.Quality (~8.5 GB)" -ForegroundColor Yellow
-Write-Host ""
-Write-Host "It's recommended to update your video card drivers if you have an older version and a newer one is available." -ForegroundColor Yellow
-Write-Host "After that, you must run this utility again to check the Vulkan API version." -ForegroundColor Yellow
-Write-Host ""
+WHaL ""
+WHaL "The Texture Resolution setting affects the amount of video memory consumed by the game:" -ForegroundColor Yellow
+WHaL "Performance (~5 GB), Balanced (~5.5 GB), Quality (~6.5 GB), Max.Quality (~8.5 GB)" -ForegroundColor Yellow
+WHaL ""
+WHaL "It's recommended to update your video card drivers if you have an older version and a newer one is available." -ForegroundColor Yellow
+WHaL "After that, you must run this utility again to check the Vulkan API version." -ForegroundColor Yellow
+WHaL ""
 if ($($VideoCard.Name) -like "*nvidia*") {
-    Write-Host "Link to the latest video driver: " -NoNewline
-    Write-Host "(https://www.nvidia.com/Download/index.aspx)" -ForegroundColor Green
-    Write-Host "You can also try the beta driver for Vulkan: " -NoNewline
-    Write-Host "(https://developer.nvidia.com/downloads/vulkan-beta-53837-windows)" -ForegroundColor Green
+    WHaL "Link to the latest video driver: " -NoNewline
+    WHaL "(https://www.nvidia.com/Download/index.aspx)" -ForegroundColor Green
+    WHaL "You can also try the beta driver for Vulkan: " -NoNewline
+    WHaL "(https://developer.nvidia.com/downloads/vulkan-beta-53837-windows)" -ForegroundColor Green
 } elseif ($($VideoCard.Name) -like "*amd*") {
-    Write-Host "Link to the latest video driver: " -NoNewline
-    Write-Host "(https://www.amd.com/en/support)" -ForegroundColor Green
-    Write-Host "You can also try the driver for Enshrouded: " -NoNewline
-    Write-Host "(https://www.amd.com/en/support/kb/release-notes/rn-rad-win-23-40-02-03-enshrouded)" -ForegroundColor Green
+    WHaL "Link to the latest video driver: " -NoNewline
+    WHaL "(https://www.amd.com/en/support)" -ForegroundColor Green
+    WHaL "You can also try the driver for Enshrouded: " -NoNewline
+    WHaL "(https://www.amd.com/en/support/kb/release-notes/rn-rad-win-23-40-02-03-enshrouded)" -ForegroundColor Green
 } else {
-    Write-Host "Video card not recognized."
+    WHaL "Video card not recognized."
 }
 # Completing script execution
-Write-Host ""
-Write-Host 'Even if after all the corrections you have made, the game continues to crash after some time, most likely the problem is in the game itself. Either you have a very large and complex "castle", or you have a large number of crops. (This problem seems to be known to developers and it remains only to wait for patches.)' -ForegroundColor Yellow
-Write-Host ""
-Write-Host "The computer must be restarted for the changes to take effect." -ForegroundColor Yellow
-Write-Host ""
+WHaL ""
+WHaL 'Even if after all the corrections you have made, the game continues to crash after some time, most likely the problem is in the game itself. Either you have a very large and complex "castle", or you have a large number of crops. (This problem seems to be known to developers and it remains only to wait for patches.)' -ForegroundColor Yellow
+WHaL ""
+WHaL "The computer must be restarted for the changes to take effect." -ForegroundColor Yellow
+WHaL ""
+# Write data to log file
+$dateTime = Get-Date -Format "yyyy-MM-ddTHH-mm-ss"
+if (-not (Test-Path -Path "$gamePath_0\Enshrouded_Tool_Fix")) {
+    New-Item -Path "$gamePath_0\Enshrouded_Tool_Fix" -ItemType Directory -Force
+}
+Copy-Item -Path $logFilePath -Destination "$gamePath_0\Enshrouded_Tool_Fix\Enshrouded_Tool_Fix_$dateTime.log"
+Remove-Item -Path $logFilePath -Force
+Start-Process -FilePath "$gamePath_0\Enshrouded_Tool_Fix"
 Read-Host -Prompt "Press Enter to Exit"
 exit

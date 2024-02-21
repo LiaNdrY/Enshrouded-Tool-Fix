@@ -22,6 +22,10 @@ irm "https://raw.githubusercontent.com/LiaNdrY/Enshrouded-Tool-Fix/main/Enshroud
 
 ## List of changes:
 
+#### v1.1.0
+
+- Added creation of a log file at the end of the script.
+
 #### v1.0.14
 
 - Improved paging file checking system
