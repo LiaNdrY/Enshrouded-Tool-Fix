@@ -22,9 +22,14 @@ irm "https://raw.githubusercontent.com/LiaNdrY/Enshrouded-Tool-Fix/main/Enshroud
 
 ## List of changes:
 
+#### v1.1.1
+
+- Added text explanation if the script does not find the installed game
+- Fixed detection of AMD video cards
+
 #### v1.1.0
 
-- Added creation of a log file at the end of the script.
+- Added creation of a log file at the end of the script
 
 #### v1.0.14
 
@@ -41,7 +46,7 @@ irm "https://raw.githubusercontent.com/LiaNdrY/Enshrouded-Tool-Fix/main/Enshroud
 
 #### v1.0.11
 
-- Added unlocking of Vulkan Runtime files in the system of AMD video card users for successful update.
+- Added unlocking of Vulkan Runtime files in the system of AMD video card users for successful update
 
 #### v1.0.10
 
@@ -49,11 +54,11 @@ irm "https://raw.githubusercontent.com/LiaNdrY/Enshrouded-Tool-Fix/main/Enshroud
 
 #### v1.0.9
 
-- Fixed version definition and API name of the Vulkan layer, if they are empty, in this case the version will be determined as 0.0.000 and the layer will be deleted.
+- Fixed version definition and API name of the Vulkan layer, if they are empty, in this case the version will be determined as 0.0.000 and the layer will be deleted
 
 #### v1.0.8
 
-- Fixed a problem when running the script through PowerShell versions higher than version 5, it broke the formatting of the json settings file.
+- Fixed a problem when running the script through PowerShell versions higher than version 5, it broke the formatting of the json settings file
 
 #### v1.0.7
 
@@ -69,13 +74,13 @@ irm "https://raw.githubusercontent.com/LiaNdrY/Enshrouded-Tool-Fix/main/Enshroud
 
 #### v1.0.5
 
-- Added a correct search for the path to the game, if the launch parameters are specified in Steam.
+- Added a correct search for the path to the game, if the launch parameters are specified in Steam
 
 #### v1.0.4
 
 - Changed some value search algorithms
 - Added on/off GameDVR
-- Changed the logic for searching for the native resolution for the main monitor.
+- Changed the logic for searching for the native resolution for the main monitor
 
 #### v1.0.3
 

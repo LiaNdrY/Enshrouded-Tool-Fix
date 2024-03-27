@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.1.0"
+$ver = "1.1.1"
 $Host.UI.RawUI.WindowTitle = "Enshrouder Tool Fix v$ver"
 $logFilePath = "$env:TEMP\Enshrouded_Tool_Fix.log"
 if (Test-Path -Path $logFilePath) {
@@ -91,6 +91,7 @@ if ($matches.Matches.Count -gt 0) {
     }
 } else {
     WHaL "No installed game found"
+    WHaL "If you moved the game to another drive and never launched it after moving it. Then you need to run it at least once and then run this script again." -ForegroundColor Yellow
     WHaL ""
     Read-Host -Prompt "Press Enter to Exit"
     exit
@@ -592,7 +593,7 @@ if ($($VideoCard.Name) -like "*nvidia*") {
     WHaL "(https://www.nvidia.com/Download/index.aspx)" -ForegroundColor Green
     WHaL "You can also try the beta driver for Vulkan: " -NoNewline
     WHaL "(https://developer.nvidia.com/downloads/vulkan-beta-53837-windows)" -ForegroundColor Green
-} elseif ($($VideoCard.Name) -like "*amd*") {
+} elseif ($($VideoCard.Name) -like "*radeon*" -or $($VideoCard.Name) -like "*amd*") {
     WHaL "Link to the latest video driver: " -NoNewline
     WHaL "(https://www.amd.com/en/support)" -ForegroundColor Green
     WHaL "You can also try the driver for Enshrouded: " -NoNewline
