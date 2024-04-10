@@ -22,6 +22,10 @@ irm "https://raw.githubusercontent.com/LiaNdrY/Enshrouded-Tool-Fix/main/Enshroud
 
 ## List of changes:
 
+#### v1.1.2
+
+- Added support for Intel video cards
+
 #### v1.1.1
 
 - Added text explanation if the script does not find the installed game

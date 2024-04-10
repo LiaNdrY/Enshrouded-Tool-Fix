@@ -1,6 +1,6 @@
 # Creator LiaNdrY
-$ver = "1.1.1"
-$Host.UI.RawUI.WindowTitle = "Enshrouder Tool Fix v$ver"
+$ver = "1.1.2"
+$Host.UI.RawUI.WindowTitle = "Enshrouded Tool Fix v$ver"
 $logFilePath = "$env:TEMP\Enshrouded_Tool_Fix.log"
 if (Test-Path -Path $logFilePath) {
     Remove-Item -Path $logFilePath
@@ -151,13 +151,15 @@ $keyPaths[$Api_Video_x64.Name] = @{
     Api_Version = ""
 }
 $uniqueKeyPaths = @{}
-$keyPaths.GetEnumerator() | Group-Object -Property { [System.IO.Path]::GetFileName($_.Name) } | Sort-Object -Property { [System.IO.Path]::GetFileName($_.Group[0].Name) } |ForEach-Object {
+$keyPaths.GetEnumerator() | Group-Object -Property { [System.IO.Path]::GetFileName($_.Name) } | Sort-Object -Property { [System.IO.Path]::GetFileName($_.Group[0].Name) } | ForEach-Object {
     $uniqueKeyPaths[$_.Group[0].Name] = $_.Group[0].Value
 }
 foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Path]::GetFileName($_.Key) }) {
     $jsonPath = $entry.Key
     if (Test-Path $jsonPath) {
         $jsonContent = Get-Content -Path $jsonPath -Raw | ConvertFrom-Json
+        $libraryPathICD = $jsonContent.ICD.library_path
+        $api_VersionICD = $jsonContent.ICD.api_version
         $apiVersion = $jsonContent.layer.api_version
         $description = $jsonContent.layer.description
         $architecture = $entry.Value.Architecture
@@ -167,6 +169,8 @@ foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Pa
         if ($jsonPath -eq $Api_Video_x64.name) {
             if (Test-Path $Api_Video_x64.value) {
                 $jsonContent = Get-Content -Path $Api_Video_x64.value -Raw | ConvertFrom-Json
+                $libraryPathICD_x64 = $jsonContent.ICD.library_path
+                $api_VersionICD_x64 = $jsonContent.ICD.api_version
                 $apiVersion = $jsonContent.layer.api_version
                 $description = $jsonContent.layer.description
                 $architecture = $entry.Value.Architecture
@@ -179,6 +183,8 @@ foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Pa
         if ($jsonPath -eq $Api_Video_x86.name) {
             if (Test-Path $Api_Video_x86.value) {
                 $jsonContent = Get-Content -Path $Api_Video_x86.value -Raw | ConvertFrom-Json
+                $libraryPathICD_x86 = $jsonContent.ICD.library_path
+                $api_VersionICD_x86 = $jsonContent.ICD.api_version
                 $apiVersion = $jsonContent.layer.api_version
                 $description = $jsonContent.layer.description
                 $architecture = $entry.Value.Architecture
@@ -191,18 +197,40 @@ foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Pa
     }
 }
 WHaL "Checking Vulkan layer API versions..."
+$messageIntelPrinted = $false
+$apiVersion_ICD_x86 = if (![string]::IsNullOrWhiteSpace($api_VersionICD_x86)) { $api_VersionICD_x86 } elseif (![string]::IsNullOrWhiteSpace($apiVersion)) { $apiVersion } else { "0.0.000" }
+$apiVersion_ICD_x64 = if (![string]::IsNullOrWhiteSpace($api_VersionICD_x64)) { $api_VersionICD_x64 } elseif (![string]::IsNullOrWhiteSpace($apiVersion)) { $apiVersion } else { "0.0.000" }
 foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Path]::GetFileName($_.Key) }) {
     $apiVersion = if ([string]::IsNullOrWhiteSpace($entry.Value.Api_Version)) { "0.0.000" } else { $entry.Value.Api_Version }
     $description = if ([string]::IsNullOrWhiteSpace($entry.Value.Description)) { "Layer name is empty" } else { $entry.Value.Description }
-    if ([version]$apiVersion -lt [version]"1.2") {
-        WHaL "$description $($entry.Value.Architecture)" -NoNewline -ForegroundColor Red
-        WHaL " (v$apiVersion) - this version is outdated and will be removed" -ForegroundColor Red
-        #if ($entry.Key -notlike "*json*") {
-        Remove-ItemProperty -Path $entry.Value.Path -Name $entry.Key -ErrorAction SilentlyContinue
-        #}
-    } else {
+    if ((![string]::IsNullOrWhiteSpace($entry.Value.Description)) -and ([version]$apiVersion -gt [version]"1.2")) {
         WHaL "$description $($entry.Value.Architecture)" -NoNewline
         WHaL " (v$apiVersion)" -ForegroundColor Green
+    }
+    if ((($libraryPathICD_x86 -like "*igvk32.dll*") -or ($libraryPathICD_x64 -like "*igvk64.dll*")) -and (!$messageIntelPrinted) -and (($entry.Key -like "VulkanDriverName") -or ($entry.Key -like "VulkanDriverNameWoW"))) {
+        if (([version]$apiVersion_ICD_x86 -lt [version]"1.2") -or ([version]$apiVersion_ICD_x64 -lt [version]"1.2")) {
+            WHaL "INTEL Overlay Layer x86 (v$apiVersion_ICD_x86) - The Vulkan API layer is out of date, please update your video driver." -ForegroundColor Red
+            WHaL "INTEL Overlay Layer x64 (v$apiVersion_ICD_x64) - The Vulkan API layer is out of date, please update your video driver." -ForegroundColor Red
+            $messageIntelPrinted = $true
+        } else {
+            WHaL "INTEL Overlay Layer x86 " -NoNewline
+            WHaL "(v$apiVersion_ICD_x86)" -ForegroundColor Green
+            WHaL "INTEL Overlay Layer x64 " -NoNewline
+            WHaL "(v$apiVersion_ICD_x64)" -ForegroundColor Green
+            $messageIntelPrinted = $true
+        }
+    }
+    if ([version]$apiVersion -lt [version]"1.2") {
+        if ($entry.Key -like "*json*") {
+            WHaL "$description $($entry.Value.Architecture)" -NoNewline -ForegroundColor Red
+            WHaL " (v$apiVersion) - this version is outdated and will be removed" -ForegroundColor Red
+            Remove-ItemProperty -Path $entry.Value.Path -Name $entry.Key -ErrorAction SilentlyContinue
+        }
+        if (($entry.Key -notlike "*json*") -and (($libraryPathICD_x86 -notlike "*igvk32.dll*") -or ($libraryPathICD_x64 -notlike "*igvk64.dll*"))) {
+            WHaL "$description $($entry.Value.Architecture) (v$apiVersion) - The Vulkan API layer is out of date, please update your video driver." -ForegroundColor Red
+        } else {
+            continue
+        }
     }
 }
 # Checking Vulkan API Versions
@@ -323,6 +351,23 @@ $paths_AMD = @(
 )
 if (Test-Path "$env:LOCALAPPDATA\AMD") {
     WHaL "Clearing AMD GPU cache: " -NoNewline
+    foreach ($path in $paths_AMD) {
+        if (Test-Path $path) {
+            try {
+                Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue
+            } catch {
+                WHaL "Error deleting $path" -ForegroundColor Red
+            }
+        }
+    }
+    WHaL "Done" -ForegroundColor Green
+}
+# Clearing the cache of INTEL video cards
+$paths_INTEL = @(
+    "$env:USERPROFILE\appdata\locallow\Intel\ShaderCache"
+)
+if (Test-Path "$env:USERPROFILE\appdata\locallow\Intel") {
+    WHaL "Clearing INTEL GPU cache: " -NoNewline
     foreach ($path in $paths_AMD) {
         if (Test-Path $path) {
             try {
@@ -596,8 +641,9 @@ if ($($VideoCard.Name) -like "*nvidia*") {
 } elseif ($($VideoCard.Name) -like "*radeon*" -or $($VideoCard.Name) -like "*amd*") {
     WHaL "Link to the latest video driver: " -NoNewline
     WHaL "(https://www.amd.com/en/support)" -ForegroundColor Green
-    WHaL "You can also try the driver for Enshrouded: " -NoNewline
-    WHaL "(https://www.amd.com/en/support/kb/release-notes/rn-rad-win-23-40-02-03-enshrouded)" -ForegroundColor Green
+} elseif (($($VideoCard.Name) -like "*intel*") -or ($($VideoCard.Name) -like "*ark*") -or ($($VideoCard.Name) -like "*iris*")) {
+    WHaL "Link to the latest video driver: " -NoNewline
+    WHaL "(https://www.techpowerup.com/download/intel-graphics-drivers/)" -ForegroundColor Green
 } else {
     WHaL "Video card not recognized."
 }
