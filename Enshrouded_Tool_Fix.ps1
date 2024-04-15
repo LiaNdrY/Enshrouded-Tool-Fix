@@ -641,7 +641,7 @@ if ($($VideoCard.Name) -like "*nvidia*") {
 } elseif ($($VideoCard.Name) -like "*radeon*" -or $($VideoCard.Name) -like "*amd*") {
     WHaL "Link to the latest video driver: " -NoNewline
     WHaL "(https://www.amd.com/en/support)" -ForegroundColor Green
-} elseif (($($VideoCard.Name) -like "*intel*") -or ($($VideoCard.Name) -like "*ark*") -or ($($VideoCard.Name) -like "*iris*")) {
+} elseif (($($VideoCard.Name) -like "*intel*") -or ($($VideoCard.Name) -like "*arc*") -or ($($VideoCard.Name) -like "*iris*")) {
     WHaL "Link to the latest video driver: " -NoNewline
     WHaL "(https://www.techpowerup.com/download/intel-graphics-drivers/)" -ForegroundColor Green
 } else {
