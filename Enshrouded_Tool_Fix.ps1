@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.1.2"
+$ver = "1.1.3"
 $Host.UI.RawUI.WindowTitle = "Enshrouded Tool Fix v$ver"
 $logFilePath = "$env:TEMP\Enshrouded_Tool_Fix.log"
 if (Test-Path -Path $logFilePath) {
@@ -614,17 +614,18 @@ if ($Ram -lt 16) {
 # Check VRAM
 WHaL ""
 $VideoCard = Get-CimInstance -ClassName Win32_VideoController | Where-Object { $_.AdapterCompatibility }
-$vRam = [Math]::Round((Get-ItemProperty -Path "$Api_Video0" -ErrorAction SilentlyContinue).'HardwareInformation.qwMemorySize' / 1GB)
-if ($vRam -lt 6) {
-    WHaL "Video Card: " -NoNewline
-    WHaL $($VideoCard.Name) -NoNewline
-    WHaL " ($vRam GB)" -ForegroundColor Red
+$dxPath = $Api_Video0 -split '\\'
+$dxVideoPath = Get-ItemProperty -Path ("HKLM:\SOFTWARE\Microsoft\DirectX\" + $dxPath[-2]) -ErrorAction SilentlyContinue
+$vRamDX = [Math]::Round(($dxVideoPath.DedicatedVideoMemory) / 1GB)
+if ($vRamDX -lt 6) {
+    WHaL "Video Card: $($VideoCard.Name)" -NoNewline
+    WHaL " ($vRamDX GB)" -ForegroundColor Red
     WHaL "Attention: the amount of video memory is less than 6 GB" -ForegroundColor Yellow
     WHaL "Additionally, with only 4GB of VRAM, the game limits texture settings. You can't change them in-game." -ForegroundColor Red
     WHaL "It is very likely that the game will show you a warning that your system does not meet the minimum requirements. You can acknowledge this message and proceed at your own risk." -ForegroundColor Yellow
 } else {
     WHaL "Video Card: " -NoNewline
-    WHaL "$($VideoCard.Name) ($vRam GB)" -ForegroundColor Green
+    WHaL "$($VideoCard.Name) ($vRamDX GB)" -ForegroundColor Green
 }
 WHaL ""
 WHaL "The Texture Resolution setting affects the amount of video memory consumed by the game:" -ForegroundColor Yellow
@@ -641,7 +642,7 @@ if ($($VideoCard.Name) -like "*nvidia*") {
 } elseif ($($VideoCard.Name) -like "*radeon*" -or $($VideoCard.Name) -like "*amd*") {
     WHaL "Link to the latest video driver: " -NoNewline
     WHaL "(https://www.amd.com/en/support)" -ForegroundColor Green
-} elseif (($($VideoCard.Name) -like "*intel*") -or ($($VideoCard.Name) -like "*ark*") -or ($($VideoCard.Name) -like "*iris*")) {
+} elseif (($($VideoCard.Name) -like "*intel*") -or ($($VideoCard.Name) -like "*arc*") -or ($($VideoCard.Name) -like "*iris*")) {
     WHaL "Link to the latest video driver: " -NoNewline
     WHaL "(https://www.techpowerup.com/download/intel-graphics-drivers/)" -ForegroundColor Green
 } else {
