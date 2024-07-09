@@ -22,6 +22,10 @@ irm "https://raw.githubusercontent.com/LiaNdrY/Enshrouded-Tool-Fix/main/Enshroud
 
 ## List of changes:
 
+#### v1.1.4
+
+- Fixed an issue with nVidia video cards where, after installing a new video driver, the script could not determine the version of the Vulkan layer.
+
 #### v1.1.3
 
 - Improved algorithm for calculating video memory for all brands of video cards

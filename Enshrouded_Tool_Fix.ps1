@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.1.3"
+$ver = "1.1.4"
 $Host.UI.RawUI.WindowTitle = "Enshrouded Tool Fix v$ver"
 $logFilePath = "$env:TEMP\Enshrouded_Tool_Fix.log"
 if (Test-Path -Path $logFilePath) {
@@ -171,8 +171,16 @@ foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Pa
                 $jsonContent = Get-Content -Path $Api_Video_x64.value -Raw | ConvertFrom-Json
                 $libraryPathICD_x64 = $jsonContent.ICD.library_path
                 $api_VersionICD_x64 = $jsonContent.ICD.api_version
-                $apiVersion = $jsonContent.layer.api_version
-                $description = $jsonContent.layer.description
+                if ($jsonContent.PSObject.Properties.Name -contains 'layer') {
+                    $apiVersion = $jsonContent.layer.api_version
+                    $description = $jsonContent.layer.description
+                } elseif ($jsonContent.PSObject.Properties.Name -contains 'layers') {
+                    $apiVersion = $jsonContent.layers.api_version
+                    $description = $jsonContent.layers.description
+                } else {
+                    WHaL "Neither 'layer' nor 'layers' property found in JSON." -ForegroundColor Red
+                    return
+                }
                 $architecture = $entry.Value.Architecture
                 $uniqueKeyPaths[$entry.Name].Description = $description
                 $uniqueKeyPaths[$entry.Name].Api_Version = $apiVersion
@@ -185,8 +193,16 @@ foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Pa
                 $jsonContent = Get-Content -Path $Api_Video_x86.value -Raw | ConvertFrom-Json
                 $libraryPathICD_x86 = $jsonContent.ICD.library_path
                 $api_VersionICD_x86 = $jsonContent.ICD.api_version
-                $apiVersion = $jsonContent.layer.api_version
-                $description = $jsonContent.layer.description
+                if ($jsonContent.PSObject.Properties.Name -contains 'layer') {
+                    $apiVersion = $jsonContent.layer.api_version
+                    $description = $jsonContent.layer.description
+                } elseif ($jsonContent.PSObject.Properties.Name -contains 'layers') {
+                    $apiVersion = $jsonContent.layers.api_version
+                    $description = $jsonContent.layers.description
+                } else {
+                    WHaL "Neither 'layer' nor 'layers' property found in JSON." -ForegroundColor Red
+                    return
+                }
                 $architecture = $entry.Value.Architecture
                 $uniqueKeyPaths[$entry.Name].Description = $description
                 $uniqueKeyPaths[$entry.Name].Api_Version = $apiVersion
