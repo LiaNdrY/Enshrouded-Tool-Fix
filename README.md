@@ -8,6 +8,7 @@ I tried to take into account many factors to prevent this from happening.
 
 
 ### Startup instructions:
+Note: The tool should be launched when the game is closed.
 
 You can open PowerShell as an administrator and paste the command into console:
 
