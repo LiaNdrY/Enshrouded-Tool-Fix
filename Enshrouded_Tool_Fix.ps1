@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.1.5"
+$ver = "1.1.6"
 $Host.UI.RawUI.WindowTitle = "Enshrouded Tool Fix v$ver"
 $logFilePath = "$env:TEMP\Enshrouded_Tool_Fix.log"
 if (Test-Path -Path $logFilePath) {
@@ -178,13 +178,22 @@ foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Pa
                     $apiVersion = $jsonContent.layers.api_version
                     $description = $jsonContent.layers.description
                 } else {
-                    WHaL "Neither 'layer' nor 'layers' property found in JSON." -ForegroundColor Red
-                    if ($jsonPath -eq $Api_Video_x64.name) {
-                        WHaL "Problem in file: $($Api_Video_x64.value)" -ForegroundColor Yellow
+                    $jsonfilename_x64 = [System.IO.Path]::GetFileName($Api_Video_x64.value)
+                    if ($jsonfilename_x64 -notcontains 'igvk') {
+                        $apiVersion = $jsonContent.ICD.api_version
+                        $description = "INTEL Overlay Layer"
+                    } elseif ($jsonfilename_x64 -notcontains 'igvk') {
+                        $apiVersion = $jsonContent.ICD.api_version
+                        $description = "Unknown Overlay Layer"
                     } else {
-                        WHaL "Problem in file: $jsonPath" -ForegroundColor Yellow
-                    }
+                        WHaL "Neither 'layer' nor 'layers' property found in JSON." -ForegroundColor Red
+                        if ($jsonPath -eq $Api_Video_x64.name) {
+                            WHaL "Problem in file: $($Api_Video_x64.value)" -ForegroundColor Yellow
+                        } else {
+                            WHaL "Problem in file: $jsonPath" -ForegroundColor Yellow
+                        }
                     return
+                    }
                 }
                 $architecture = $entry.Value.Architecture
                 $uniqueKeyPaths[$entry.Name].Description = $description
@@ -205,13 +214,22 @@ foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Pa
                     $apiVersion = $jsonContent.layers.api_version
                     $description = $jsonContent.layers.description
                 } else {
-                    WHaL "Neither 'layer' nor 'layers' property found in JSON." -ForegroundColor Red
-                    if ($jsonPath -eq $Api_Video_x86.name) {
-                        WHaL "Problem in file: $($Api_Video_x64.value)" -ForegroundColor Yellow
+                    $jsonfilename_x86 = [System.IO.Path]::GetFileName($Api_Video_x86.value)
+                    if ($jsonfilename_x86 -notcontains 'igvk') {
+                        $apiVersion = $jsonContent.ICD.api_version
+                        $description = "INTEL Overlay Layer"
+                    } elseif ($jsonfilename_x86 -notcontains 'igvk') {
+                        $apiVersion = $jsonContent.ICD.api_version
+                        $description = "Unknown Overlay Layer"
                     } else {
-                        WHaL "Problem in file: $jsonPath" -ForegroundColor Yellow
-                    }
+                        WHaL "Neither 'layer' nor 'layers' property found in JSON." -ForegroundColor Red
+                        if ($jsonPath -eq $Api_Video_x86.name) {
+                            WHaL "Problem in file: $($Api_Video_x86.value)" -ForegroundColor Yellow
+                        } else {
+                            WHaL "Problem in file: $jsonPath" -ForegroundColor Yellow
+                        }
                     return
+                    }
                 }
                 $architecture = $entry.Value.Architecture
                 $uniqueKeyPaths[$entry.Name].Description = $description
@@ -232,19 +250,6 @@ foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Pa
     if ((![string]::IsNullOrWhiteSpace($entry.Value.Description)) -and ([version]$apiVersion -gt [version]"1.2")) {
         WHaL "$description $($entry.Value.Architecture)" -NoNewline
         WHaL " (v$apiVersion)" -ForegroundColor Green
-    }
-    if ((($libraryPathICD_x86 -like "*igvk32.dll*") -or ($libraryPathICD_x64 -like "*igvk64.dll*")) -and (!$messageIntelPrinted) -and (($entry.Key -like "VulkanDriverName") -or ($entry.Key -like "VulkanDriverNameWoW"))) {
-        if (([version]$apiVersion_ICD_x86 -lt [version]"1.2") -or ([version]$apiVersion_ICD_x64 -lt [version]"1.2")) {
-            WHaL "INTEL Overlay Layer x86 (v$apiVersion_ICD_x86) - The Vulkan API layer is out of date, please update your video driver." -ForegroundColor Red
-            WHaL "INTEL Overlay Layer x64 (v$apiVersion_ICD_x64) - The Vulkan API layer is out of date, please update your video driver." -ForegroundColor Red
-            $messageIntelPrinted = $true
-        } else {
-            WHaL "INTEL Overlay Layer x86 " -NoNewline
-            WHaL "(v$apiVersion_ICD_x86)" -ForegroundColor Green
-            WHaL "INTEL Overlay Layer x64 " -NoNewline
-            WHaL "(v$apiVersion_ICD_x64)" -ForegroundColor Green
-            $messageIntelPrinted = $true
-        }
     }
     if ([version]$apiVersion -lt [version]"1.2") {
         if ($entry.Key -like "*json*") {

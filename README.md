@@ -23,9 +23,13 @@ irm "https://raw.githubusercontent.com/LiaNdrY/Enshrouded-Tool-Fix/main/Enshroud
 
 ## List of changes:
 
+#### v1.1.6
+
+- Improved algorithm for detecting Intel graphics cards
+
 #### v1.1.5
 
-- Added additional output of the path to the problematic JSON file to the screen if one is encountered.
+- Added additional output of the path to the problematic JSON file to the screen if one is encountered
 
 #### v1.1.4
 
