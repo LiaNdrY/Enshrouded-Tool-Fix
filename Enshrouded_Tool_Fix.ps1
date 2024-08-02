@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.1.4"
+$ver = "1.1.5"
 $Host.UI.RawUI.WindowTitle = "Enshrouded Tool Fix v$ver"
 $logFilePath = "$env:TEMP\Enshrouded_Tool_Fix.log"
 if (Test-Path -Path $logFilePath) {
@@ -179,13 +179,18 @@ foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Pa
                     $description = $jsonContent.layers.description
                 } else {
                     WHaL "Neither 'layer' nor 'layers' property found in JSON." -ForegroundColor Red
+                    if ($jsonPath -eq $Api_Video_x64.name) {
+                        WHaL "Problem in file: $($Api_Video_x64.value)" -ForegroundColor Yellow
+                    } else {
+                        WHaL "Problem in file: $jsonPath" -ForegroundColor Yellow
+                    }
                     return
                 }
                 $architecture = $entry.Value.Architecture
                 $uniqueKeyPaths[$entry.Name].Description = $description
                 $uniqueKeyPaths[$entry.Name].Api_Version = $apiVersion
             } else {
-                WHaL "File $Api_Video_x64.value not found." -ForegroundColor Red
+                WHaL "File $($Api_Video_x64.value) not found." -ForegroundColor Red
             }
         }
         if ($jsonPath -eq $Api_Video_x86.name) {
@@ -201,13 +206,18 @@ foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Pa
                     $description = $jsonContent.layers.description
                 } else {
                     WHaL "Neither 'layer' nor 'layers' property found in JSON." -ForegroundColor Red
+                    if ($jsonPath -eq $Api_Video_x86.name) {
+                        WHaL "Problem in file: $($Api_Video_x64.value)" -ForegroundColor Yellow
+                    } else {
+                        WHaL "Problem in file: $jsonPath" -ForegroundColor Yellow
+                    }
                     return
                 }
                 $architecture = $entry.Value.Architecture
                 $uniqueKeyPaths[$entry.Name].Description = $description
                 $uniqueKeyPaths[$entry.Name].Api_Version = $apiVersion
             } else {
-                WHaL "File $Api_Video_x86.value not found." -ForegroundColor Red
+                WHaL "File $($Api_Video_x86.value) not found." -ForegroundColor Red
             }
         }
     }
