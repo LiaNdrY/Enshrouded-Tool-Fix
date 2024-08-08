@@ -23,6 +23,10 @@ irm "https://raw.githubusercontent.com/LiaNdrY/Enshrouded-Tool-Fix/main/Enshroud
 
 ## List of changes:
 
+#### v1.1.7
+
+- Added cleaning of Vulkan shader cache from LocalAppData folder
+
 #### v1.1.6
 
 - Improved algorithm for detecting Intel graphics cards

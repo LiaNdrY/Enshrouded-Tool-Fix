@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.1.6"
+$ver = "1.1.7"
 $Host.UI.RawUI.WindowTitle = "Enshrouded Tool Fix v$ver"
 $logFilePath = "$env:TEMP\Enshrouded_Tool_Fix.log"
 if (Test-Path -Path $logFilePath) {
@@ -410,10 +410,19 @@ if (Test-Path "$env:USERPROFILE\appdata\locallow\Intel") {
     }
     WHaL "Done" -ForegroundColor Green
 }
-# Clearing the cache in the Steam directory
+# Clearing the cache in the Steam directory and LocalAppData
 WHaL "Clearing game shader cache in $FolderCache\: " -NoNewline
 Remove-Item -Path $FolderCache -Recurse -Force -ErrorAction SilentlyContinue
 WHaL "Done" -ForegroundColor Green
+$cachePath = Join-Path -Path $env:LOCALAPPDATA -ChildPath "enshrouded\caches"
+if (Test-Path $cachePath) {
+    Get-ChildItem -Path $cachePath -Filter "*.bin" | Remove-Item -Force
+    WHaL "Clearing game shader cache in $cachePath\: " -NoNewline
+    WHaL "Done" -ForegroundColor Green
+} else {
+    WHaL "Clearing game shader cache in $cachePath\: " -NoNewline
+    WHaL "Not Done (The directory was not found at this path.)" -ForegroundColor Yellow
+}
 WHaL ""
 WHaL "After starting the game, it will start recompiling shaders after entering your world, shader compilation will continue (this will take some time ~10 min), you can observe the progress at the bottom of the menu by pressing ESC" -ForegroundColor Yellow
 # Setting the native resolution in the game
