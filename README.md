@@ -23,6 +23,13 @@ irm "https://raw.githubusercontent.com/LiaNdrY/Enshrouded-Tool-Fix/main/Enshroud
 
 ## List of changes:
 
+#### v1.1.8
+
+- Fixed the algorithm for detecting Vulkan layers in the system due to the update of drivers for video cards
+- Fixed the algorithm for clearing the cache for video cards from Intel
+- Added forced installation of the 'Normal' priority when starting the game
+- Added cache clearing for DirectX (just in case)
+
 #### v1.1.7
 
 - Added cleaning of Vulkan shader cache from LocalAppData folder

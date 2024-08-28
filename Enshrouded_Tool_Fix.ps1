@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.1.7"
+$ver = "1.1.8"
 $Host.UI.RawUI.WindowTitle = "Enshrouded Tool Fix v$ver"
 $logFilePath = "$env:TEMP\Enshrouded_Tool_Fix.log"
 if (Test-Path -Path $logFilePath) {
@@ -109,16 +109,16 @@ foreach ($property in $vCardPath.PSObject.Properties) {
         }
     }
 }
-$Api_Video_x64 = (Get-ItemProperty -Path "$Api_Video0" -ErrorAction SilentlyContinue).PSObject.Properties | Where-Object { $_.Name -match 'Vulkan' -and $_.Name -match 'Driver' -and $_.Name -notmatch 'Wow' }
-$Api_Video_x86 = (Get-ItemProperty -Path "$Api_Video0" -ErrorAction SilentlyContinue).PSObject.Properties | Where-Object { $_.Name -match 'Vulkan' -and $_.Name -match 'Driver' -and $_.Name -match 'Wow' }
-$paths = @(
+$Api_Video_x64 = (Get-ItemProperty -Path "$Api_Video0" -ErrorAction SilentlyContinue).PSObject.Properties | Where-Object { $_.Name -match 'Vulkan' -and $_.Name -match 'Driver' -and $_.Name -notmatch 'Wow' -and $_.Name -notmatch 'SCD' }
+$Api_Video_x86 = (Get-ItemProperty -Path "$Api_Video0" -ErrorAction SilentlyContinue).PSObject.Properties | Where-Object { $_.Name -match 'Vulkan' -and $_.Name -match 'Driver' -and $_.Name -match 'Wow' -and $_.Name -notmatch 'SCD'}
+$pathsVK = @(
     "HKCU:\SOFTWARE\Khronos\Vulkan\ImplicitLayers",
     "HKCU:\SOFTWARE\Wow6432Node\Khronos\Vulkan\ImplicitLayers",
     "HKLM:\SOFTWARE\Khronos\Vulkan\ImplicitLayers",
     "HKLM:\SOFTWARE\WOW6432Node\Khronos\Vulkan\ImplicitLayers"
 )
 $keyPaths = @{}
-foreach ($path in $paths) {
+foreach ($path in $pathsVK) {
     $properties = Get-ItemProperty -Path $path -ErrorAction SilentlyContinue
     if ($properties) {
         foreach ($property in $properties.PSObject.Properties) {
@@ -350,6 +350,23 @@ if ($vulkanProcesses.Count -eq 0) {
 } else {
     $vulkanProcesses | Select-Object ProcessName, Id, Path | Out-Host
 }
+# Clearing the cache of DirectX
+$paths_DirectX = @(
+    "$env:LOCALAPPDATA\D3DSCache"
+)
+if (Test-Path "$env:LOCALAPPDATA\D3DSCache") {
+    WHaL "Clearing DirectX cache: " -NoNewline
+    foreach ($path in $paths_DirectX) {
+        if (Test-Path $path) {
+            try {
+                Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue
+            } catch {
+                WHaL "Error deleting $path" -ForegroundColor Red
+            }
+        }
+    }
+    WHaL "Done" -ForegroundColor Green
+}
 # Clearing the cache of nVidia video cards
 $paths_nVidia = @(
     "$env:LOCALAPPDATA\NVIDIA\GLCache",
@@ -399,7 +416,7 @@ $paths_INTEL = @(
 )
 if (Test-Path "$env:USERPROFILE\appdata\locallow\Intel") {
     WHaL "Clearing INTEL GPU cache: " -NoNewline
-    foreach ($path in $paths_AMD) {
+    foreach ($path in $paths_INTEL) {
         if (Test-Path $path) {
             try {
                 Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue
@@ -483,6 +500,19 @@ if (Test-Path -Path $fileJsonSG) {
     WHaL "The enshrouded_user.json file is missing from the Saved Games folder." -ForegroundColor Red
     WHaL ""
 }
+# Set enshrouded.exe to normal execution priority
+$regEnshroudedPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\enshrouded.exe\PerfOptions"
+$regEnshroudedName = "CpuPriorityClass"
+$regEnshroudedValue = 2
+WHaL "Set the priority of the enshrouded.exe file to 'Normal' when starting: " -NoNewline
+if (-not (Test-Path $regEnshroudedPath)) {
+    New-Item -Path $regEnshroudedPath -Force | Out-Null
+    New-ItemProperty -Path $regEnshroudedPath -Name $regEnshroudedName -Value $regEnshroudedValue -PropertyType DWord -Force | Out-Null
+    WHaL "Done" -ForegroundColor Green
+} else {
+    WHaL "Done" -ForegroundColor Green
+}
+WHaL ""
 # Set Powerplan
 $guids = @{
     "High performance" = "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
