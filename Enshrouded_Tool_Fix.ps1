@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.1.8"
+$ver = "1.1.9"
 $Host.UI.RawUI.WindowTitle = "Enshrouded Tool Fix v$ver"
 $logFilePath = "$env:TEMP\Enshrouded_Tool_Fix.log"
 if (Test-Path -Path $logFilePath) {
@@ -269,7 +269,40 @@ WHaL ""
 $FolderCache = $gamePath_0.Substring(0, $gamePath_0.Length - 18) + "\shadercache\$game_id"
 WHaL "Checking Vulkan Runtime versions..."
 WHaL ""
-$LastVRVer = (Invoke-WebRequest -Uri 'https://sdk.lunarg.com/sdk/download/latest/windows/config.json' -UseBasicParsing | ConvertFrom-Json).version
+$jsonUrl = "https://vulkan.lunarg.com/sdk/files.json"
+$tempFile = "$env:TEMP\files.json"
+try {
+    Invoke-WebRequest -Uri $jsonUrl -OutFile $tempFile -ErrorAction Stop
+}
+catch {
+    WHaL "Failed to download json file: $($_.Exception.Message)" -ForegroundColor Red
+    exit
+}
+try {
+    $json = Get-Content $tempFile -Raw | ConvertFrom-Json
+}
+catch {
+    WHaL "Failed to parse JSON: $($_.Exception.Message)" -ForegroundColor Red
+    Remove-Item $tempFile
+    exit
+}
+$windowsData = $json.windows
+$versions = ($windowsData.PSObject.Properties | Where-Object {$_.MemberType -eq "NoteProperty"} | Sort-Object {$_.Name -as [version]} -Descending | Select-Object -ExpandProperty Name)
+$LastVRVer = $null
+foreach ($version in $versions) {
+    $versionData = $windowsData.$version
+    $runtimeFile = $versionData.files | Where-Object {$_.name -eq "Runtime"}
+    if ($runtimeFile) {
+        $LastVRVer = $version
+        break
+    }
+}
+if ($LastVRVer) {
+    $downloadUrl = "https://sdk.lunarg.com/sdk/download/$LastVRVer/windows/VulkanRT-$LastVRVer-Installer.exe"
+} else {
+    WHaL "Could not find version (windows) with Runtime file."
+}
+Remove-Item $tempFile
 WHaL "Latest Vulkan Runtime version: " -NoNewline
 WHaL $LastVRVer -ForegroundColor Green
 $dllPath = "$env:SystemRoot\System32\vulkan-1.dll"
@@ -315,12 +348,11 @@ if ([version]$CurDllVer -lt [version]$LastVRVer) {
     }
     WHaL "Downloading the latest Vulkan Runtime..."
     WHaL ""
-    $downloadUrl = "https://sdk.lunarg.com/sdk/download/latest/windows/vulkan-runtime.exe"
     $downloadPath = "$env:TEMP\vulkan-runtime.exe"
     Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadPath
     WHaL "Installing the latest Vulkan Runtime..."
     WHaL ""
-    Start-Process -FilePath $downloadPath -ArgumentList "/S" -Wait
+    Start-Process -FilePath $downloadPath -ArgumentList "/auto" -Wait
     Remove-Item -Path $downloadPath -Force
     WHaL "Installation complete, checking Vulkan Runtime versions..."
     WHaL ""

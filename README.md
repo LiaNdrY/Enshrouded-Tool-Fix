@@ -23,6 +23,9 @@ irm "https://raw.githubusercontent.com/LiaNdrY/Enshrouded-Tool-Fix/main/Enshroud
 
 ## List of changes:
 
+#### v1.1.9
+- Fixed the algorithm for determining the latest available version of Vulkan RT
+
 #### v1.1.8
 
 - Fixed the algorithm for detecting Vulkan layers in the system due to the update of drivers for video cards
