@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.1.9"
+$ver = "1.1.10"
 $Host.UI.RawUI.WindowTitle = "Enshrouded Tool Fix v$ver"
 $logFilePath = "$env:TEMP\Enshrouded_Tool_Fix.log"
 if (Test-Path -Path $logFilePath) {
@@ -245,7 +245,9 @@ $messageIntelPrinted = $false
 $apiVersion_ICD_x86 = if (![string]::IsNullOrWhiteSpace($api_VersionICD_x86)) { $api_VersionICD_x86 } elseif (![string]::IsNullOrWhiteSpace($apiVersion)) { $apiVersion } else { "0.0.000" }
 $apiVersion_ICD_x64 = if (![string]::IsNullOrWhiteSpace($api_VersionICD_x64)) { $api_VersionICD_x64 } elseif (![string]::IsNullOrWhiteSpace($apiVersion)) { $apiVersion } else { "0.0.000" }
 foreach ($entry in $uniqueKeyPaths.GetEnumerator() | Sort-Object { [System.IO.Path]::GetFileName($_.Key) }) {
-    $apiVersion = if ([string]::IsNullOrWhiteSpace($entry.Value.Api_Version)) { "0.0.000" } else { $entry.Value.Api_Version }
+    $apiVersion = if ([string]::IsNullOrWhiteSpace($entry.Value.Api_Version)) { "0.0.000" } else {
+    if ($entry.Value.Api_Version -is [System.Object[]]) { $entry.Value.Api_Version[0] } else { $entry.Value.Api_Version }
+    }
     $description = if ([string]::IsNullOrWhiteSpace($entry.Value.Description)) { "Layer name is empty" } else { $entry.Value.Description }
     if ((![string]::IsNullOrWhiteSpace($entry.Value.Description)) -and ([version]$apiVersion -gt [version]"1.2")) {
         WHaL "$description $($entry.Value.Architecture)" -NoNewline
@@ -729,6 +731,27 @@ if ($vRamDX -lt 6) {
     WHaL "Video Card: " -NoNewline
     WHaL "$($VideoCard.Name) ($vRamDX GB)" -ForegroundColor Green
 }
+$GPUName = "DriverDesc"
+$GPUVer = "DriverVersion"
+$GPUDateDrv = "DriverDate"
+$driverName = (Get-ItemProperty -Path $Api_Video0 -Name $GPUName).$GPUName
+$driverVersion = (Get-ItemProperty -Path $Api_Video0 -Name $GPUVer).$GPUVer
+$driverDate = (Get-ItemProperty -Path $Api_Video0 -Name $GPUDateDrv).$GPUDateDrv
+if ($driverName -like "*NVIDIA*") {
+    $parts = $driverVersion -split '\.'
+    $convVer = ($parts[2].Substring(1) + $parts[3]).Insert(3, ".")
+    WHaL "GPU driver version: " -NoNewline
+    WHaL "$convVer ($driverDate)" -ForegroundColor Green
+} elseif ($driverName -like "*AMD*") {
+    $GPUVer = "RadeonSoftwareVersion"
+    $driverVersion = (Get-ItemProperty -Path $Api_Video0 -Name $GPUVer).$GPUVer
+    WHaL "GPU driver version: " -NoNewline
+    WHaL "$driverVersion ($driverDate)" -ForegroundColor Green
+} elseif ($driverName -like "*Intel*") {
+    $convVer = ($driverVersion -split '\.')[2..3] -join '.'
+    WHaL "GPU driver version: " -NoNewline
+    WHaL "$convVer ($driverDate)" -ForegroundColor Green
+}
 WHaL ""
 WHaL "The Texture Resolution setting affects the amount of video memory consumed by the game:" -ForegroundColor Yellow
 WHaL "Performance (~5 GB), Balanced (~5.5 GB), Quality (~6.5 GB), Max.Quality (~8.5 GB)" -ForegroundColor Yellow
@@ -740,7 +763,7 @@ if ($($VideoCard.Name) -like "*nvidia*") {
     WHaL "Link to the latest video driver: " -NoNewline
     WHaL "(https://www.nvidia.com/Download/index.aspx)" -ForegroundColor Green
     WHaL "You can also try the beta driver for Vulkan: " -NoNewline
-    WHaL "(https://developer.nvidia.com/downloads/vulkan-beta-53837-windows)" -ForegroundColor Green
+    WHaL "(https://developer.nvidia.com/vulkan-driver)" -ForegroundColor Green
 } elseif ($($VideoCard.Name) -like "*radeon*" -or $($VideoCard.Name) -like "*amd*") {
     WHaL "Link to the latest video driver: " -NoNewline
     WHaL "(https://www.amd.com/en/support)" -ForegroundColor Green
