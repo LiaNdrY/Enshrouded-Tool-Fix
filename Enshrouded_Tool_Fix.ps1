@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.1.10"
+$ver = "1.1.11"
 $Host.UI.RawUI.WindowTitle = "Enshrouded Tool Fix v$ver"
 $logFilePath = "$env:TEMP\Enshrouded_Tool_Fix.log"
 if (Test-Path -Path $logFilePath) {
@@ -289,18 +289,20 @@ catch {
     exit
 }
 $windowsData = $json.windows
-$versions = ($windowsData.PSObject.Properties | Where-Object {$_.MemberType -eq "NoteProperty"} | Sort-Object {$_.Name -as [version]} -Descending | Select-Object -ExpandProperty Name)
-$LastVRVer = $null
-foreach ($version in $versions) {
-    $versionData = $windowsData.$version
-    $runtimeFile = $versionData.files | Where-Object {$_.name -eq "Runtime"}
-    if ($runtimeFile) {
-        $LastVRVer = $version
-        break
-    }
-}
-if ($LastVRVer) {
-    $downloadUrl = "https://sdk.lunarg.com/sdk/download/$LastVRVer/windows/VulkanRT-$LastVRVer-Installer.exe"
+$LVRVer = $windowsData.PSObject.Properties.Name | ForEach-Object {
+        $ver = $_
+        $runtime = $windowsData.$ver.files | Where-Object { $_.name -eq "Runtime" }
+        if ($runtime) {
+            [PSCustomObject]@{
+                Version = $ver
+                FileName = $runtime.file_name
+            }
+        }
+    } | Sort-Object { [version]$_.Version } -Descending | Select-Object -First 1
+$LastVRVer = $LVRVer.Version
+$FileNameVR = $LVRVer.FileName
+if ($LVRVer) {
+    $downloadUrl = "https://sdk.lunarg.com/sdk/download/$LastVRVer/windows/$FileNameVR"
 } else {
     WHaL "Could not find version (windows) with Runtime file."
 }
@@ -580,6 +582,27 @@ foreach ($key in $values.Keys) {
 }
 WHaL "Improve input responsiveness and network throughput: " -NoNewline
 WHaL "Done" -ForegroundColor Green
+WHaL ""
+# Enabling the system's gaming mode
+$regPath = "HKCU:\Software\Microsoft\GameBar"
+$regName = "AutoGameModeEnabled"
+$currentValue = (Get-ItemProperty -Path $regPath -Name $regName -ErrorAction SilentlyContinue).$regName
+if ($currentValue -eq 1) {
+    WHaL "Game Mode: " -NoNewline
+    WHaL "ALREADY ENABLE" -ForegroundColor Green
+} else {
+    if (-not (Test-Path $regPath)) { New-Item -Path $regPath -Force | Out-Null }
+    Set-ItemProperty -Path $regPath -Name $regName -Value 1 -Type DWord -Force
+    $newValue = (Get-ItemProperty -Path $regPath -Name $regName).$regName
+    if ($newValue -eq 1) {
+        WHaL "Game Mode: " -NoNewline
+        WhaL "ENABLE " -NoNewline -ForegroundColor Green
+        WHaL "(Need Reboot)" -ForegroundColor Yellow
+    } else {
+        WHaL "Game Mode: " -NoNewline
+        WHaL "Failed to enable game mode" -ForegroundColor Red
+    }
+}
 WHaL ""
 # Enable/disable GameDVR
 $gameDvrEnabled = (Get-ItemProperty -Path "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -ErrorAction SilentlyContinue).GameDVR_Enabled

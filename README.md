@@ -23,6 +23,10 @@ irm "https://raw.githubusercontent.com/LiaNdrY/Enshrouded-Tool-Fix/main/Enshroud
 
 ## List of changes:
 
+#### v1.1.11
+- The algorithm for determining the latest version of VulkanRT on the developer's website has been fixed
+- Added check for disabled system gaming mode
+
 #### v1.1.10
 - Fixed the algorithm for determining the version of the Vulkan layer due to the update of the format of new video card drivers
 - Added display of the version and date of the video card driver
