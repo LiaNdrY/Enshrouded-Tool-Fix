@@ -23,6 +23,9 @@ irm "https://raw.githubusercontent.com/LiaNdrY/Enshrouded-Tool-Fix/main/Enshroud
 
 ## List of changes:
 
+#### v1.1.12
+- Added display of computer name (hostname)
+
 #### v1.1.11
 - The algorithm for determining the latest version of VulkanRT on the developer's website has been fixed
 - Added check for disabled system gaming mode

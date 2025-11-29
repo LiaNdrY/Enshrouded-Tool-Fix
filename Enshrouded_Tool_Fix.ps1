@@ -34,6 +34,7 @@ if (-not $isAdmin) {
     [Console]::ReadLine() | Out-Null
     exit
 }
+WhaL "Hostname: $env:COMPUTERNAME" -ForegroundColor Green
 WHaL "Script is running as an administrator. Proceeding with the work..." -ForegroundColor Green
 WHaL ""
 # Finding the path to the installed game folder on Steam
