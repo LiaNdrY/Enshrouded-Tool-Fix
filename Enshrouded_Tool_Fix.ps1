@@ -1,5 +1,5 @@
 # Creator LiaNdrY
-$ver = "1.1.11"
+$ver = "1.1.12"
 $Host.UI.RawUI.WindowTitle = "Enshrouded Tool Fix v$ver"
 $logFilePath = "$env:TEMP\Enshrouded_Tool_Fix.log"
 if (Test-Path -Path $logFilePath) {
@@ -34,6 +34,7 @@ if (-not $isAdmin) {
     [Console]::ReadLine() | Out-Null
     exit
 }
+WhaL "Script version: $ver"
 WhaL "Hostname: $env:COMPUTERNAME" -ForegroundColor Green
 WHaL "Script is running as an administrator. Proceeding with the work..." -ForegroundColor Green
 WHaL ""
