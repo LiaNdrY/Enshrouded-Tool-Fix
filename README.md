@@ -23,6 +23,11 @@ irm "https://raw.githubusercontent.com/LiaNdrY/Enshrouded-Tool-Fix/main/Enshroud
 
 ## List of changes:
 
+#### v1.1.13
+- Added support for Enshrouded v1.0+
+- Added check for Intel processors (Vmin Shift Instability)
+- Refactored code
+
 #### v1.1.12
 - Added display of computer name (hostname)
 
