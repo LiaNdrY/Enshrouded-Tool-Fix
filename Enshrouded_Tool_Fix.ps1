@@ -1,4 +1,4 @@
-﻿# Creator LiaNdrY
+# Creator LiaNdrY
 [CmdletBinding()]
 param()
 
